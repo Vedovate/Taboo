@@ -1,0 +1,145 @@
+<section class="sala-container">
+  <header class="page-header">
+    @if (gameService.connected()) {
+      <h1>Sala de Chat #{{ roomCode() }}</h1>
+      <p class="subtitle">{{ userName() }} está conectado</p>
+    } @else if (!roomCode().trim()) {
+      <h1>Lobby - Sala de Chat</h1>
+      <p class="subtitle">Conecte-se a uma sala e participe do chat em tempo real</p>
+    } @else {
+      <h1>Sala #{{ roomCode() }}</h1>
+      <p class="subtitle">{{ userName() }} está conectado à sala</p>
+    }
+  </header>
+
+  <div class="grid">
+    <!-- Painel de Mensagens -->
+    <div class="messages" *ngIf="gameService.connected()">
+      @if (gameService.messages().length === 0) {
+        <p class="empty">Nenhuma mensagem recebida ainda.</p>
+      } @else {
+        <ul class="message-list">
+          @for (message of gameService.messages(); track $index) {
+            <li class="message-item">{{ message }}</li>
+          }
+        </ul>
+      }
+    </div>
+
+    <!-- Painel de Controle -->
+    <div class="panel" *ngIf="!gameService.connected()">
+      @if (roomCode() && userName()) {
+        <h3 class="panel-title">Controle da Sala</h3>
+        
+        <button 
+          type="button" 
+          [disabled]="true"
+          class="btn btn-primary full-width disabled-btn"
+        >
+          Conectado!
+        </button>
+
+      } @else if (!roomCode().trim() || !userName().trim()) {
+        <!-- Painel de Entrada -->
+        <h3 class="panel-title">Entrar na Sala</h3>
+        
+        <div class="row">
+          <label for="roomCode" class="form-label">Código da Sala</label>
+          <input 
+            id="roomCode" 
+            type="text" 
+            [value]="roomCode()" 
+            (input)="onRoomInput($event)" 
+            placeholder="Ex: SALA123"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="row">
+          <label for="userName" class="form-label">Nome do Usuário</label>
+          <input 
+            id="userName" 
+            type="text" 
+            [value]="userName()" 
+            (input)="onUserNameInput($event)" 
+            placeholder="Ex: Leonardo"
+            autocomplete="off"
+          />
+        </div>
+
+        <button 
+          type="button" 
+          (click)="conectar()" 
+          class="btn btn-primary full-width"
+        >
+          Criar/Entrar na Sala
+        </button>
+      } @else if (!roomCode().trim()) {
+        <!-- Painel de Lobby Inicial -->
+        <h3 class="panel-title">Bem-vindo ao Taboo Chat</h3>
+        
+        <p class="info-text">
+          Digite um código de sala e seu nome para entrar no chat. 
+          Se a sala não existir, ela será criada automaticamente!
+        </p>
+
+        <div class="row">
+          <label for="roomCode" class="form-label">Código da Sala</label>
+          <input 
+            id="roomCode" 
+            type="text" 
+            [value]="roomCode()" 
+            (input)="onRoomInput($event)" 
+            placeholder="Ex: SALA123"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="row">
+          <label for="userName" class="form-label">Nome do Usuário</label>
+          <input 
+            id="userName" 
+            type="text" 
+            [value]="userName()" 
+            (input)="onUserNameInput($event)" 
+            placeholder="Ex: Leonardo"
+            autocomplete="off"
+          />
+        </div>
+
+        <button 
+          type="button" 
+          (click)="conectar()" 
+          class="btn btn-primary full-width"
+        >
+          Entrar na Sala
+        </button>
+      }
+    </div>
+
+    <!-- Painel de Envio de Mensagens -->
+    <div class="panel" *ngIf="gameService.connected()">
+      <h3 class="panel-title">Enviar Mensagem</h3>
+      
+      <div class="row">
+        <label for="messageText" class="form-label">Nova Mensagem</label>
+        <input 
+          id="messageText" 
+          type="text" 
+          [value]="messageText()" 
+          (input)="onMessageInput($event)" 
+          placeholder="Digite e envie para a sala"
+          autocomplete="off"
+        />
+      </div>
+
+      <button 
+        type="button" 
+        (click)="enviarMensagem()" 
+        class="btn btn-primary full-width"
+      >
+        Enviar Mensagem
+      </button>
+    </div>
+  </div>
+</section>

@@ -1,183 +1,295 @@
-// src/app/components/chat-teste/chat-teste.component.ts
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common'; // Necessário para ngIf, ngFor
-import { FormsModule } from '@angular/forms'; // Necessário para ngModel
-
-import { GameService } from '../../services/game.service'; // Importa o nosso serviço
+import { Component, inject } from '@angular/core';
+import { signal } from '@angular/core';
+import { GameService } from '../../services/game.service';
 
 @Component({
   selector: 'app-chat-teste',
-  standalone: true, // Componente standalone
-  imports: [CommonModule, FormsModule], // Importa módulos necessários
-  template: `
-    <div class="chat-container">
-      <h2>Chat de Teste SignalR</h2>
+  standalone: true,
+  templateUrl: './chat-teste.component.html',
+  styles: [`
+    :host {
+      display: block;
+      min-height: calc(100vh - 48px);
+      padding: 24px;
+    }
 
-      <div class="controls">
-        <label for="roomCode">Código da Sala:</label>
-        <input id="roomCode" type="text" [(ngModel)]="roomCode" placeholder="Ex: SALA123" />
+    .sala-container {
+      max-width: 960px;
+      margin: 0 auto;
+      border-radius: 16px;
+      background-color: var(--bg-primary);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
 
-        <label for="userName">Seu Nome:</label>
-        <input id="userName" type="text" [(ngModel)]="userName" placeholder="Ex: Jogador1" />
+    .page-header {
+      text-align: center;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+      margin-bottom: 32px;
+    }
 
-        <button (click)="joinRoom()" [disabled]="!roomCode || !userName || !isGameServiceConnected()">
-          Entrar na Sala
-        </button>
-        <button (click)="disconnect()" [disabled]="!isGameServiceConnected()">
-          Desconectar
-        </button>
-      </div>
+    .page-header h1 {
+      margin: 0 0 8px;
+      font-size: 1.75rem;
+      color: var(--white);
+    }
 
-      @if (gameService.chatMessages().length > 0) {
-        <div class="messages-display">
-          <h3>Mensagens da Sala:</h3>
-          @for (message of gameService.chatMessages(); track $index) {
-            <p>{{ message }}</p>
-          }
-        </div>
-      }
+    .subtitle {
+      margin: 0;
+      color: rgba(245, 247, 250, 0.6);
+      font-size: 1rem;
+    }
 
-      <div class="message-input">
-        <label for="messageText">Mensagem:</label>
-        <input id="messageText" type="text" [(ngModel)]="messageText" placeholder="Digite sua mensagem..." />
-        <button (click)="sendMessage()" [disabled]="!messageText || !roomCode || !userName || !isGameServiceConnected()">
-          Enviar
-        </button>
-      </div>
-    </div>
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
 
-    <style>
-      .chat-container {
-        font-family: Arial, sans-serif;
-        max-width: 600px;
-        margin: 20px auto;
-        padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: 2fr 1fr;
       }
-      .controls, .message-input {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 20px;
-        align-items: center;
-      }
-      .controls label, .message-input label {
-        flex-basis: 100%; /* Ocupa a linha toda em telas pequenas */
-        font-weight: bold;
-      }
-      .controls input, .message-input input {
-        flex-grow: 1; /* Permite que o input cresça para preencher o espaço */
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        min-width: 150px; /* Garante que o input não fique muito pequeno */
-      }
-      .controls button, .message-input button {
-        padding: 8px 15px;
-        border: none;
-        border-radius: 4px;
-        background-color: #007bff;
-        color: white;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-      }
-      .controls button:hover:not(:disabled), .message-input button:hover:not(:disabled) {
-        background-color: #0056b3;
-      }
-      .controls button:disabled, .message-input button:disabled {
-        background-color: #cccccc;
-        cursor: not-allowed;
-      }
-      .messages-display {
-        border: 1px solid #eee;
-        padding: 10px;
-        height: 300px;
-        overflow-y: auto;
-        background-color: #f9f9f9;
-        border-radius: 4px;
-        margin-bottom: 20px;
-      }
-      .messages-display p {
-        margin: 5px 0;
-        padding-bottom: 5px;
-        border-bottom: 1px dotted #e0e0e0;
-      }
-      .messages-display p:last-child {
-        border-bottom: none;
-      }
-      h2, h3 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 20px;
-      }
-    </style>
-  `
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 20px;
+      border-radius: 16px;
+      background-color: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 1rem;
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    .row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-label {
+      font-size: 0.9rem;
+      color: var(--white);
+      font-weight: 500;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 2px solid rgba(59, 130, 246, 0.3);
+      background-color: rgba(15, 23, 42, 0.8);
+      color: var(--white);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="text"]::placeholder {
+      color: rgba(245, 247, 250, 0.3);
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--blue-500);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 14px 28px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--blue-500), #60a5fa);
+      color: white;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #2563eb, var(--blue-500));
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--red-500), #f87171);
+      color: white;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: linear-gradient(135deg, #dc2626, var(--red-500));
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background-color: rgba(34, 197, 94, 0.15);
+      border-radius: 999px;
+      color: #22c55e;
+      font-weight: 500;
+    }
+
+    .status-indicator::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background-color: #22c55e;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .error-text, .info-text, .empty {
+      margin: 0;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+
+    .disabled-btn {
+      cursor: default !important;
+    }
+
+    .error-message {
+      padding: 12px 14px;
+      background-color: rgba(239, 68, 68, 0.15);
+      border-radius: 12px;
+      color: var(--red-500);
+      text-align: center;
+    }
+
+    .error-message::before {
+      content: '⚠️';
+      margin-right: 6px;
+    }
+
+    .info-text {
+      padding: 14px;
+      background-color: rgba(34, 211, 238, 0.1);
+      border-radius: 12px;
+      color: rgba(96, 165, 250, 0.7);
+    }
+
+    .messages {
+      min-height: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+      padding: 20px;
+      border-radius: 16px;
+      background-color: rgba(34, 211, 238, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+    }
+
+    .message-list {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .message-item {
+      padding: 14px 16px;
+      border-radius: 12px;
+      background-color: rgba(59, 130, 246, 0.1);
+      border-left: 3px solid var(--blue-500);
+    }
+
+    .empty {
+      color: rgba(245, 247, 250, 0.4);
+    }
+  `]
 })
-export class ChatTesteComponent implements OnInit, OnDestroy {
-  // Injeta o GameService usando a função 'inject()', um recurso moderno do Angular.
-  public gameService: GameService = inject(GameService);
+export class ChatTesteComponent {
+  readonly gameService = inject(GameService);
 
-  // Signals para o estado dos inputs do formulário.
-  // Embora para inputs simples ngModel e variáveis normais funcionem,
-  // usar signals pode ser útil para cenários mais complexos de reatividade.
-  public roomCode: string = '';
-  public userName: string = '';
-  public messageText: string = '';
+  readonly roomCode = signal('');
+  
+  readonly userName = signal('');
+  readonly messageText = signal('');
 
-  ngOnInit(): void {
-    // Ao iniciar o componente, tenta conectar ao SignalR.
-    // Em um aplicativo real, você pode querer controlar isso de forma mais granular.
-    this.gameService.connect();
+  onRoomInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.roomCode.set(target.value);
   }
 
-  ngOnDestroy(): void {
-    // Ao destruir o componente, desconecta do SignalR para liberar recursos.
-    this.gameService.disconnect();
+  onUserNameInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.userName.set(target.value);
   }
 
-  /**
-   * Verifica se o GameService está conectado ao SignalR.
-   * Usado para habilitar/desabilitar botões.
-   */
-  public isGameServiceConnected(): boolean {
-    // Em um serviço real, você poderia ter um signal que expõe o estado da conexão.
-    // Por simplicidade aqui, verificamos a presença da conexão.
-    return !!this.gameService['hubConnection'] &&
-           this.gameService['hubConnection'].state === (window as any).signalR.HubConnectionState.Connected;
+  onMessageInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.messageText.set(target.value);
   }
 
-  /**
-   * Chama o método 'entrarNaSala' do GameService.
-   */
-  public async joinRoom(): Promise<void> {
-    if (this.roomCode && this.userName) {
-      await this.gameService.entrarNaSala(this.roomCode, this.userName);
-    } else {
-      console.warn('Por favor, preencha o código da sala e seu nome.');
+  async conectar(): Promise<void> {
+    await this.gameService.conectar(this.roomCode(), this.userName());
+    
+    // Redirecionamento automático após conexão bem-sucedida
+    if (this.gameService.connected()) {
+      const code = this.roomCode();
+      
+      // Pequeno delay para garantir que o serviço já atualizou seu estado
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      window.location.href = `/sala/${code}`;
     }
   }
 
-  /**
-   * Chama o método 'enviarMensagemTeste' do GameService.
-   */
-  public async sendMessage(): Promise<void> {
-    if (this.roomCode && this.userName && this.messageText) {
-      await this.gameService.enviarMensagemTeste(this.roomCode, this.userName, this.messageText);
-      this.messageText = ''; // Limpa o campo de mensagem após o envio.
-    } else {
-      console.warn('Por favor, preencha a mensagem, código da sala e seu nome.');
+  async enviarMensagem(): Promise<void> {
+    const texto = this.messageText().trim();
+
+    if (!texto) {
+      return;
     }
+
+    await this.gameService.enviarMensagem(texto);
+    this.messageText.set('');
   }
 
-  /**
-   * Desconecta do SignalR.
-   */
-  public async disconnect(): Promise<void> {
-    await this.gameService.disconnect();
-    this.roomCode = '';
-    this.userName = '';
-    this.messageText = '';
+  async desconectar(): Promise<void> {
+    await this.gameService.desconectar();
+    // Ao desconectar, o usuário volta para a tela inicial (rota raiz)
+    window.location.href = '/';
   }
 }

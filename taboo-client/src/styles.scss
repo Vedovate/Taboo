@@ -1,1 +1,14 @@
-/* You can add global styles to this file, and also import other style files */
+/* Variáveis Globais - Paleta Escura com Azul/Vermelho/Branco */
+:root {
+  --bg-primary: #0f172a;       /* fundo escuro slate-900 */
+  --blue-500: #3b82f6;         /* destaque azul blue-500 */
+  --red-500: #ef4444;          /* destaque vermelho red-500 */
+  --white: #e5e7eb;            /* texto neutro gray-200 */
+}
+
+/* Fundo escuro global para todas as páginas */
+body {
+  background-color: var(--bg-primary);
+  color: var(--white);
+  font-family: system-ui, -apple-system, sans-serif;
+}

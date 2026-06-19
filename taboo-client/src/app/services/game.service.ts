@@ -1,139 +1,139 @@
 // src/app/services/game.service.ts
-import { Injectable, signal, WritableSignal } from '@angular/core';
-import * as signalR from '@microsoft/signalr'; // Importa o pacote SignalR
+import { Injectable, signal } from '@angular/core';
+import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 
-@Injectable({
-  // 'providedIn: 'root'' torna o serviço um singleton global,
-  // disponível para injeção em qualquer lugar da aplicação.
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class GameService {
-  // A URL base da API do backend para o hub SignalR.
-  // Certifique-se de que a porta corresponde à sua configuração do backend.
-  private hubUrl: string = 'http://localhost:5123/gamehub';
-  private hubConnection: signalR.HubConnection | undefined;
+  private readonly hubUrl = 'http://localhost:5123/gamehub';
+  private hubConnection?: HubConnection;
+  private roomCode = '';
+  private userName = '';
+  
+  // Sinal para armazenar mensagens de erro temporárias
+  readonly error = signal<string>('');
 
-  // Signal do Angular para armazenar e expor as mensagens do chat em tempo real.
-  // WritableSignal<string[]> permite que o serviço atualize a lista de mensagens.
-  public chatMessages: WritableSignal<string[]> = signal<string[]>([]);
+  readonly messages = signal<string[]>([]);
+  readonly connected = signal(false);
 
-  constructor() {
-    // No construtor, podemos inicializar a conexão ou fazer isso sob demanda.
-    // Para este exemplo, a conexão será iniciada explicitamente pelo componente.
-  }
+  async conectar(codigoSala: string, nomeUsuario: string): Promise<void> {
+    const sala = codigoSala.trim();
+    const usuario = nomeUsuario.trim();
 
-  /**
-   * Inicia a conexão com o hub SignalR.
-   * Configura reconexão automática em caso de desconexão.
-   */
-  public async connect(): Promise<void> {
-    if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-      console.log('Já conectado ao hub.');
+    if (!sala || !usuario) {
+      this.error.set('Por favor, preencha o código da sala e seu nome.');
       return;
     }
 
-    // Constrói a conexão com o hub, permitindo credenciais (para CORS e autenticação futura).
-    this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(this.hubUrl, { withCredentials: true })
-      .withAutomaticReconnect() // Configura a reconexão automática.
+    // Limpa erro anterior ao tentar conectar
+    this.error.set('');
+    
+    this.roomCode = sala;
+    this.userName = usuario;
+    this.messages.set([]);
+
+    const connection = this.getOrCreateConnection();
+
+    if (connection.state !== HubConnectionState.Connected) {
+      await connection.start();
+    }
+
+    try {
+      await connection.invoke('EntrarNaSala', sala, usuario);
+      this.connected.set(true);
+    } catch (error: any) {
+      console.error('Erro ao conectar:', error);
+      // Mantém o estado de conexão como false em caso de erro
+      const errorMsg = error?.message || 'Ocorreu um erro desconhecido.';
+      if (!errorMsg.includes('already connected')) {
+        this.error.set(errorMsg);
+      } else {
+        this.connected.set(true);
+      }
+    }
+  }
+
+  async enviarMensagem(mensagem: string): Promise<void> {
+    const texto = mensagem.trim();
+
+    if (!texto || !this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) {
+      return;
+    }
+
+    await this.hubConnection.invoke('EnviarMensagem', this.roomCode, texto);
+  }
+
+  async desconectar(): Promise<void> {
+    try {
+      if (this.hubConnection) {
+        await this.hubConnection.stop();
+        this.hubConnection = undefined;
+      }
+
+      this.roomCode = '';
+      this.userName = '';
+      this.connected.set(false);
+      this.messages.set([]);
+      
+      // Limpa erro ao desconectar com sucesso
+      this.error.set('');
+    } catch (error: any) {
+      console.error('Erro ao desconectar:', error);
+    }
+  }
+
+  clearError(): void {
+    this.error.set('');
+  }
+
+  private getOrCreateConnection(): HubConnection {
+    if (this.hubConnection) {
+      return this.hubConnection;
+    }
+
+    this.hubConnection = new HubConnectionBuilder()
+      .withUrl(this.hubUrl)
+      .withAutomaticReconnect()
       .build();
 
-    // Configura os listeners para os eventos do hub ANTES de iniciar a conexão.
-    this.setupHubListeners();
-
-    try {
-      await this.hubConnection.start();
-      console.log('Conexão SignalR iniciada com sucesso.');
-    } catch (error) {
-      console.error('Erro ao iniciar a conexão SignalR:', error);
-      // Implementar lógica de retry ou notificação ao usuário em caso de falha.
-    }
+    this.registerHandlers();
+    return this.hubConnection;
   }
 
-  /**
-   * Configura os listeners para os eventos enviados pelo GameHub do backend.
-   * Este método deve ser chamado antes de iniciar a conexão.
-   */
-  private setupHubListeners(): void {
+  private registerHandlers(): void {
     if (!this.hubConnection) {
-      console.error('HubConnection não inicializada.');
       return;
     }
 
-    // Listener para o evento 'ReceberMensagemTeste' vindo do backend.
-    // O backend enviará 'nomeUsuario' e 'mensagem'.
-    this.hubConnection.on('ReceberMensagemTeste', (nomeUsuario: string, mensagem: string) => {
-      // Atualiza o signal com a nova mensagem.
-      // Usa 'update' para adicionar a nova mensagem à lista existente, mantendo a reatividade.
-      this.chatMessages.update(messages => [...messages, `${nomeUsuario}: ${mensagem}`]);
-      console.log(`Mensagem recebida: ${nomeUsuario}: ${mensagem}`);
+    this.hubConnection.on('ReceberMensagem', (mensagem: string) => {
+      this.messages.update(current => [...current, mensagem]);
     });
 
-    // Opcional: Adicionar listeners para eventos de estado da conexão.
-    this.hubConnection.onreconnecting(error => {
-      console.warn('Reconectando ao SignalR...', error);
+    this.hubConnection.onreconnecting(() => {
+      this.connected.set(false);
     });
 
-    this.hubConnection.onreconnected(connectionId => {
-      console.log('Reconexão SignalR bem-sucedida. Novo ConnectionId:', connectionId);
-      // Pode ser necessário re-entrar na sala após a reconexão, dependendo da lógica do jogo.
-      // Para este chat de teste, o backend gerencia o grupo por ConnectionId.
+    this.hubConnection.onreconnected(async () => {
+      this.connected.set(true);
+
+      if (this.roomCode && this.userName) {
+        await this.hubConnection?.invoke('EntrarNaSala', this.roomCode, this.userName);
+      }
     });
 
-    this.hubConnection.onclose(error => {
-      console.error('Conexão SignalR fechada:', error);
-      // Notificar o usuário ou tentar reconectar.
+    this.hubConnection.onclose(() => {
+      // Só limpa o estado se não estiver conectado em outra sala
+      if (!this.connected()) {
+        this.connected.set(false);
+        this.messages.set([]);
+        
+        // Limpa erro apenas após um pequeno delay para permitir que a UI mostre mensagens de sucesso anteriores
+        setTimeout(() => {
+          this.error.set('');
+        }, 2000);
+      } else {
+        // Usuário está em outra sala - não limpar o estado da conexão atual
+        console.log('Conexão fechada, mas usuário ainda conectado na mesma sala.');
+      }
     });
-  }
-
-  /**
-   * Desconecta do hub SignalR.
-   */
-  public async disconnect(): Promise<void> {
-    if (this.hubConnection) {
-      await this.hubConnection.stop();
-      console.log('Conexão SignalR desconectada.');
-      this.hubConnection = undefined; // Limpa a referência.
-      this.chatMessages.set([]); // Limpa as mensagens ao desconectar.
-    }
-  }
-
-  /**
-   * Envia uma chamada para o método 'EntrarNaSala' no GameHub do backend.
-   * @param codigoSala O código da sala para entrar.
-   * @param nomeUsuario O nome do usuário que está entrando.
-   */
-  public async entrarNaSala(codigoSala: string, nomeUsuario: string): Promise<void> {
-    if (!this.hubConnection || this.hubConnection.state !== signalR.HubConnectionState.Connected) {
-      console.error('Não conectado ao hub SignalR.');
-      return;
-    }
-    try {
-      // Invoca o método do servidor. Os argumentos devem corresponder à assinatura do método no Hub.
-      await this.hubConnection.invoke('EntrarNaSala', codigoSala, nomeUsuario);
-      console.log(`Entrou na sala '${codigoSala}' como '${nomeUsuario}'.`);
-      this.chatMessages.update(messages => [...messages, `Você entrou na sala '${codigoSala}'.`]);
-    } catch (error) {
-      console.error('Erro ao tentar entrar na sala:', error);
-    }
-  }
-
-  /**
-   * Envia uma chamada para o método 'EnviarMensagemTeste' no GameHub do backend.
-   * @param codigoSala O código da sala.
-   * @param mensagem A mensagem a ser enviada.
-   */
-  public async enviarMensagemTeste(codigoSala: string, nomeUsuario: string, mensagem: string): Promise<void> {
-    if (!this.hubConnection || this.hubConnection.state !== signalR.HubConnectionState.Connected) {
-      console.error('Não conectado ao hub SignalR.');
-      return;
-    }
-    try {
-      // Invoca o método do servidor. Os argumentos devem corresponder à assinatura do método no Hub.
-      await this.hubConnection.invoke('EnviarMensagemTeste', codigoSala, nomeUsuario, mensagem);
-      console.log(`Mensagem '${mensagem}' enviada para a sala '${codigoSala}'.`);
-    } catch (error) {
-      console.error('Erro ao tentar enviar mensagem de teste:', error);
-    }
   }
 }

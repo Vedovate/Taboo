@@ -24,9 +24,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Registrar o GameManager como um serviço Singleton.
-// Isso garante que haja apenas uma instância do GameManager gerenciando o estado do jogo.
-builder.Services.AddSingleton<IGameManager, GameManager>();
+builder.Services.AddSingleton<GameManager>();
 
 var app = builder.Build();
 var connectionString = app.Configuration.GetConnectionString("SqliteConnection");
@@ -55,8 +53,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Mapeia o GameHub para a rota "/gamehub".
-// É aqui que o frontend Angular se conectará.
 app.MapHub<GameHub>("/gamehub");
 
 app.Run();
