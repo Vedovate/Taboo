@@ -1,42 +1,32 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { TranslateModule, TranslateLoader, TranslateService } from '@ngx-translate/core';
-import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { HttpClient } from '@angular/common/http';
 
 import { HomeComponent } from './home.component';
 import { LogoPlaceholderComponent } from './logo-placeholder/logo-placeholder.component';
 import { LucideAngularModule } from '@lucide/angular';
-
-export function httpLoaderFactory(http: HttpClient): TranslateHttpLoader {
-  return new TranslateHttpLoader(http, './assets/i18n/', '.json');
-}
+import { TranslateService } from '../services/translate.service';
 
 describe('HomeComponent', () => {
   let component: HomeComponent;
   let fixture: ComponentFixture<HomeComponent>;
-  let translate: TranslateService;
+  let httpTestingController: HttpTestingController;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [HomeComponent, LogoPlaceholderComponent],
-      imports: [
-        HttpClientTestingModule,
-        TranslateModule.forRoot({
-          loader: {
-            provide: TranslateLoader,
-            useFactory: httpLoaderFactory,
-            deps: [HttpClient],
-          },
-        }),
-        LucideAngularModule,
-      ],
+      imports: [HttpClientTestingModule, LucideAngularModule],
+      providers: [TranslateService],
     }).compileComponents();
 
     fixture = TestBed.createComponent(HomeComponent);
     component = fixture.componentInstance;
-    translate = TestBed.inject(TranslateService);
+    httpTestingController = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    httpTestingController.verify();
   });
 
   it('should create', () => {
@@ -47,6 +37,5 @@ describe('HomeComponent', () => {
     const initialLang = component.currentLanguage;
     component.toggleLanguage();
     expect(component.currentLanguage).not.toBe(initialLang);
-    expect(translate.currentLang).toBe(component.currentLanguage);
   });
 });

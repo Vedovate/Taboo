@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { LucideArrowRight, LucideHash, LucidePlus } from '@lucide/angular';
 import { GameService } from '../services/game.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
+import { TranslateService } from '../services/translate.service';
 import { LogoPlaceholderComponent } from './logo-placeholder/logo-placeholder.component';
 
 @Component({
@@ -21,9 +22,8 @@ export class HomeComponent {
   isHost = false;
   hostName = '';
 
-  constructor(private translate: TranslateService, private router: Router, public gameService: GameService) {
-    this.currentLanguage = 'pt-BR';
-    this.translate.use(this.currentLanguage);
+  constructor(private translateService: TranslateService, private router: Router, public gameService: GameService) {
+    void this.translateService.use(this.currentLanguage);
   }
 
   get languageFlag(): string {
@@ -32,7 +32,7 @@ export class HomeComponent {
 
   toggleLanguage(): void {
     this.currentLanguage = this.currentLanguage === 'pt-BR' ? 'en-US' : 'pt-BR';
-    this.translate.use(this.currentLanguage);
+    void this.translateService.use(this.currentLanguage);
   }
 
   async goToLobby(): Promise<void> {
@@ -53,7 +53,7 @@ export class HomeComponent {
       }
     }
 
-    this.gameService.error.set(this.translate.instant('HOME.ERROR_CREATE_ROOM_UNIQUE'));
+    this.gameService.error.set(this.translateService.instant('HOME.ERROR_CREATE_ROOM_UNIQUE'));
   }
 
   toggleRoomCodeVisibility(): void {
@@ -68,7 +68,7 @@ export class HomeComponent {
   async joinExistingRoom(): Promise<void> {
     const code = this.roomCode.trim().toUpperCase();
     if (!code) {
-      this.gameService.error.set(this.translate.instant('HOME.ERROR_ENTER_CODE'));
+      this.gameService.error.set(this.translateService.instant('HOME.ERROR_ENTER_CODE'));
       return;
     }
 
