@@ -1,0 +1,67 @@
+<section class="lobby-shell">
+  <header class="lobby-header">
+    <div>
+      <p class="lobby-label">LOBBY DA PARTIDA - SALA <span>[{{ roomCode }}]</span></p>
+    </div>
+    <button class="btn btn-secondary" (click)="navigateBack()">VOLTAR</button>
+  </header>
+
+  <main class="lobby-grid">
+    <section class="panel panel-config">
+      <div class="panel-title-group">
+        <span class="panel-icon">🔒</span>
+        <div>
+          <h2>CONFIGURAÇÃO DA PARTIDA</h2>
+          <p>HOST ONLY</p>
+        </div>
+      </div>
+
+      <div class="config-field">
+        <span>Timer Rodada</span>
+        <div class="slider-row">
+          <span>{{ timer }}s</span>
+          <span>120s</span>
+        </div>
+        <input type="range" min="30" max="120" step="5" [value]="timer" />
+      </div>
+
+      <div class="config-field">
+        <span>Max Pontuação</span>
+        <input type="number" min="1" [value]="maxScore" />
+      </div>
+
+      <button class="btn btn-primary full-width">SALVAR CONFIGURAÇÕES</button>
+      <p class="panel-note">Configuração apenas para o host</p>
+    </section>
+
+    <section class="panel panel-players">
+      <div class="panel-heading">
+        <h2>JOGADORES (1-8)</h2>
+      </div>
+
+      <ul class="player-list">
+        <li *ngFor="let player of players; let index = index" class="player-row">
+          <span class="player-slot">{{ index + 1 }}</span>
+          <strong>{{ player.name }}</strong>
+          <span class="player-status" [class.ready]="true">{{ player.isHost ? 'HOST' : 'JOGADOR' }}</span>
+          <button *ngIf="player.isHost" class="icon-btn" aria-label="Editar Nome">⚙</button>
+        </li>
+      </ul>
+    </section>
+
+    <section class="panel panel-teams">
+      <div class="team-card red-team">
+        <h3>#FF4500</h3>
+        <p>Times serão separados aqui.</p>
+      </div>
+
+      <div class="team-card blue-team">
+        <h3>#00BAFF</h3>
+        <p>Times serão separados aqui.</p>
+      </div>
+
+      <button class="btn btn-primary full-width" (click)="randomizeTeams()">SELEÇÃO ALEATÓRIA</button>
+      <p class="panel-note">Times de team-lock</p>
+    </section>
+  </main>
+</section>

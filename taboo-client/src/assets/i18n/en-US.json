@@ -1,0 +1,24 @@
+{
+  "HOME": {
+    "TAGLINE": "The Game of Forbidden Words",
+    "NAV_RULES": "Rules",
+    "NAV_ABOUT": "About",
+    "NAV_PROFILE": "Profile",
+    "WELCOME_TITLE": "WELCOME TO TABOO",
+    "CREATE_ROOM_LABEL": "Create Room",
+    "CREATE_ROOM": "CREATE ROOM",
+    "CREATE_NOTE": "Start a game with friends",
+    "OR_LABEL": "OR",
+    "JOIN_TITLE": "JOIN A MATCH",
+    "ROOM_CODE_LABEL": "Room Code",
+    "ROOM_CODE_PLACEHOLDER": "Enter the room code (ex: A4B2Z)",
+    "JOIN_ROOM": "JOIN ROOM",
+    "JOIN_NOTE": "Share the code so your friends can join the match.",
+    "DONATE": "SUPPORT THE DEV: Voluntary Donation ❤️",
+    "FOOTER_COPY": "© 2024 Taboo Online. Built by [Dev Name]. All rights reserved.",
+    "LANG_TOGGLE_LABEL": "Switch language",
+    "ROOM_CODE_TEXT": "Room code",
+    "ERROR_ENTER_CODE": "Enter a room code to join.",
+    "ERROR_CREATE_ROOM_UNIQUE": "Could not create a unique room. Please try again."
+  }
+}

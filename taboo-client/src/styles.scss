@@ -1,14 +1,41 @@
-/* Variáveis Globais - Paleta Escura com Azul/Vermelho/Branco */
+$tertiary: #FF4500;
+$complement: #00BAFF;
+$bg-dark: #0D0D0D;
+$surface: #1A1A1A;
+$text: #F5F5F5;
+
 :root {
-  --bg-primary: #0f172a;       /* fundo escuro slate-900 */
-  --blue-500: #3b82f6;         /* destaque azul blue-500 */
-  --red-500: #ef4444;          /* destaque vermelho red-500 */
-  --white: #e5e7eb;            /* texto neutro gray-200 */
+  color: #{$text};
+  background-color: #{$bg-dark};
 }
 
-/* Fundo escuro global para todas as páginas */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
 body {
-  background-color: var(--bg-primary);
-  color: var(--white);
-  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background-color: $bg-dark;
+  color: $text;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba($complement, 0.25);
 }

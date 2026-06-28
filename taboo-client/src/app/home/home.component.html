@@ -1,0 +1,85 @@
+<section class="home-shell">
+  <header class="home-header">
+    <div class="brand-group">
+      <app-logo-placeholder></app-logo-placeholder>
+      <div class="brand-copy">
+        <span class="brand-name">TABOO</span>
+        <span class="brand-tagline">{{ 'HOME.TAGLINE' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button
+        type="button"
+        class="language-toggle"
+        (click)="toggleLanguage()"
+        aria-label="{{ 'HOME.LANG_TOGGLE_LABEL' | translate }}"
+      >
+        <span aria-hidden="true">{{ languageFlag }}</span>
+      </button>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a class="nav-link" href="#">{{ 'HOME.NAV_RULES' | translate }}</a>
+        <a class="nav-link" href="#">{{ 'HOME.NAV_ABOUT' | translate }}</a>
+        <a class="nav-link" href="#">{{ 'HOME.NAV_PROFILE' | translate }}</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="hero-card" role="main">
+    <div class="hero-title">
+      <h1>{{ 'HOME.WELCOME_TITLE' | translate }}</h1>
+    </div>
+
+    <div class="hero-grid">
+      <section class="hero-panel hero-panel-action">
+        <div class="create-room-header">
+          <span class="panel-label">{{ 'HOME.CREATE_ROOM_LABEL' | translate }}</span>
+        </div>
+
+        <button type="button" class="btn btn-primary" (click)="goToLobby()">
+          <svg lucidePlus class="icon" aria-hidden="true"></svg>
+          {{ 'HOME.CREATE_ROOM' | translate }}
+        </button>
+
+        <div class="room-code-panel" *ngIf="showRoomCode && generatedRoomCode">
+          <span>{{ 'HOME.ROOM_CODE_TEXT' | translate }}:</span>
+          <strong>{{ generatedRoomCode }}</strong>
+        </div>
+
+        <p class="panel-note">{{ 'HOME.CREATE_NOTE' | translate }}</p>
+      </section>
+
+      <section class="hero-panel hero-panel-form">
+        <span class="panel-label">{{ 'HOME.JOIN_TITLE' | translate }}</span>
+        <div class="field-group">
+          <label class="field-label" for="roomCode">{{ 'HOME.ROOM_CODE_LABEL' | translate }}</label>
+          <div class="input-shell">
+            <svg lucideHash class="input-icon" aria-hidden="true"></svg>
+            <input
+              id="roomCode"
+              type="text"
+              [value]="roomCode"
+              (input)="onRoomCodeInput($event)"
+              placeholder="{{ 'HOME.ROOM_CODE_PLACEHOLDER' | translate }}"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary" (click)="joinExistingRoom()" [disabled]="!roomCode.trim()">
+          <svg lucideArrowRight class="icon" aria-hidden="true"></svg>
+          {{ 'HOME.JOIN_ROOM' | translate }}
+        </button>
+        <p class="panel-note">{{ 'HOME.JOIN_NOTE' | translate }}</p>
+        <p class="error-message" *ngIf="gameService.error()">{{ gameService.error() }}</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="home-footer">
+    <button type="button" class="btn btn-primary">
+      <svg lucideHeart class="icon" aria-hidden="true"></svg>
+      {{ 'HOME.DONATE' | translate }}
+    </button>
+    <p class="footer-copy">{{ 'HOME.FOOTER_COPY' | translate }}</p>
+  </footer>
+</section>

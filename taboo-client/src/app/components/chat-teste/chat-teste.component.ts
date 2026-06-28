@@ -1,10 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { signal } from '@angular/core';
+import { NgIf } from '@angular/common';
 import { GameService } from '../../services/game.service';
 
 @Component({
   selector: 'app-chat-teste',
   standalone: true,
+  imports: [NgIf],
   templateUrl: './chat-teste.component.html',
   styles: [`
     :host {

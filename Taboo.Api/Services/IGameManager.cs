@@ -13,13 +13,23 @@ namespace Taboo.Api.Services
         ConcurrentDictionary<string, GameRoom> GameRooms { get; }
 
         /// <summary>
-        /// Adiciona um jogador a uma sala de jogo específica.
-        /// Se a sala não existir, ela será criada.
+        /// Cria uma sala nova com código específico e adiciona o host.
+        /// Retorna true apenas se a sala ainda não existir.
+        /// </summary>
+        bool CreateRoom(string roomCode, string connectionId, string userName);
+
+        /// <summary>
+        /// Adiciona um jogador a uma sala de jogo existente.
         /// </summary>
         /// <param name="roomCode">O código da sala.</param>
         /// <param name="connectionId">O ID de conexão SignalR do jogador.</param>
         /// <param name="userName">O nome do usuário.</param>
         void AddPlayerToRoom(string roomCode, string connectionId, string userName);
+
+        /// <summary>
+        /// Retorna a lista de jogadores presentes em uma sala.
+        /// </summary>
+        IReadOnlyList<Player> GetPlayersInRoom(string roomCode);
 
         /// <summary>
         /// Remove um jogador de uma sala.

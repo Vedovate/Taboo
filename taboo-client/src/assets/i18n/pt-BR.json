@@ -1,0 +1,24 @@
+{
+  "HOME": {
+    "TAGLINE": "O Jogo de Palavras Proibidas",
+    "NAV_RULES": "Regras",
+    "NAV_ABOUT": "Sobre",
+    "NAV_PROFILE": "Perfil",
+    "WELCOME_TITLE": "BEM-VINDO AO TABOO",
+    "CREATE_ROOM_LABEL": "Criar Sala",
+    "CREATE_ROOM": "CRIAR SALA",
+    "CREATE_NOTE": "Inicie uma partida com amigos",
+    "OR_LABEL": "OU",
+    "JOIN_TITLE": "ENTRAR NUMA PARTIDA",
+    "ROOM_CODE_LABEL": "Código da Sala",
+    "ROOM_CODE_PLACEHOLDER": "Insira o código da sala (ex: A4B2Z)",
+    "JOIN_ROOM": "ENTRAR NA SALA",
+    "JOIN_NOTE": "Compartilhe o código para que seus amigos possam se juntar à partida.",
+    "DONATE": "APOIE O DEV: Doação Voluntária ❤️",
+    "FOOTER_COPY": "© 2024 Taboo Online. Desenvolvido por [Dev Name]. Todos os direitos reservados.",
+    "LANG_TOGGLE_LABEL": "Trocar idioma",
+    "ROOM_CODE_TEXT": "Código da sala",
+    "ERROR_ENTER_CODE": "Digite um código de sala para entrar.",
+    "ERROR_CREATE_ROOM_UNIQUE": "Não foi possível criar uma sala única. Tente novamente."
+  }
+}

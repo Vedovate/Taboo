@@ -1,5 +1,6 @@
 // src/Taboo.Api/Services/GameManager.cs
 using System.Collections.Concurrent;
+using System.Linq;
 using Taboo.Api.Models;
 
 namespace Taboo.Api.Services;
@@ -21,9 +22,37 @@ public class GameManager : IGameManager
         return GameRooms.ContainsKey(roomCode);
     }
 
+    public bool CreateRoom(string roomCode, string connectionId, string userName)
+    {
+        var newRoom = new GameRoom
+        {
+            RoomCode = roomCode
+        };
+
+        if (!GameRooms.TryAdd(roomCode, newRoom))
+        {
+            return false;
+        }
+
+        lock (newRoom)
+        {
+            newRoom.Players.Add(new Player
+            {
+                ConnectionId = connectionId,
+                Name = userName,
+                IsHost = true
+            });
+        }
+
+        return true;
+    }
+
     public void AddPlayerToRoom(string roomCode, string connectionId, string userName)
     {
-        var gameRoom = GetOrCreateRoom(roomCode);
+        if (!GameRooms.TryGetValue(roomCode, out var gameRoom))
+        {
+            return;
+        }
 
         lock (gameRoom)
         {
@@ -39,6 +68,19 @@ public class GameManager : IGameManager
             }
 
             player.Name = userName;
+        }
+    }
+
+    public IReadOnlyList<Player> GetPlayersInRoom(string roomCode)
+    {
+        if (!GameRooms.TryGetValue(roomCode, out var gameRoom))
+        {
+            return Array.Empty<Player>();
+        }
+
+        lock (gameRoom)
+        {
+            return gameRoom.Players.ToList();
         }
     }
 
