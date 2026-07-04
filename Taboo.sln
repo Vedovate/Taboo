@@ -5,6 +5,12 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Taboo.Api", "Taboo.Api\Taboo.Api.csproj", "{613401FA-8282-4E11-820C-10E7D8CA308E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{D82C56D6-B2CD-F611-9E31-04638F7EC30E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{BA474DCE-A160-6553-7451-04E3D54504A5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Taboo.Api.Tests", "api\tests\Taboo.Api.Tests\Taboo.Api.Tests.csproj", "{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,8 +33,24 @@ Global
 		{613401FA-8282-4E11-820C-10E7D8CA308E}.Release|x64.Build.0 = Release|Any CPU
 		{613401FA-8282-4E11-820C-10E7D8CA308E}.Release|x86.ActiveCfg = Release|Any CPU
 		{613401FA-8282-4E11-820C-10E7D8CA308E}.Release|x86.Build.0 = Release|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Debug|x64.Build.0 = Debug|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Debug|x86.Build.0 = Debug|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Release|x64.ActiveCfg = Release|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Release|x64.Build.0 = Release|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Release|x86.ActiveCfg = Release|Any CPU
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BA474DCE-A160-6553-7451-04E3D54504A5} = {D82C56D6-B2CD-F611-9E31-04638F7EC30E}
+		{4DE2DD69-400F-4F16-BA8F-2EAFA3CC909F} = {BA474DCE-A160-6553-7451-04E3D54504A5}
 	EndGlobalSection
 EndGlobal
