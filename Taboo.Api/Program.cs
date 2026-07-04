@@ -47,7 +47,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors(); // Usa a política CORS padrão definida
-app.UseHttpsRedirection();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthorization();
 

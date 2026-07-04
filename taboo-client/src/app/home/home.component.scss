@@ -13,7 +13,6 @@
 
 .hero-card {
   flex: 1;
-  min-height: calc(100vh - 12rem);
 }
 
 .home-header {
@@ -134,7 +133,7 @@
 .create-room-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center; /* Centraliza horizontalmente */
   gap: 0.75rem;
 }
 
@@ -294,7 +293,7 @@ input[type='text']::placeholder {
   gap: 1rem;
   max-width: 1080px;
   width: min(100%, 1080px);
-  margin: 0 auto;
+  margin: auto auto 0;
 }
 
 .footer-copy {

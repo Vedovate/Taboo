@@ -40,11 +40,11 @@ export class GameService {
 
     const connection = this.getOrCreateConnection();
 
-    if (connection.state !== HubConnectionState.Connected) {
-      await connection.start();
-    }
-
     try {
+      if (connection.state !== HubConnectionState.Connected) {
+        await connection.start();
+      }
+
       const resultado = await connection.invoke<boolean>('EntrarNaSala', sala, usuario);
       if (!resultado) {
         this.error.set('Sala não encontrada. Verifique o código e tente novamente.');
@@ -111,11 +111,11 @@ export class GameService {
 
     const connection = this.getOrCreateConnection();
 
-    if (connection.state !== HubConnectionState.Connected) {
-      await connection.start();
-    }
-
     try {
+      if (connection.state !== HubConnectionState.Connected) {
+        await connection.start();
+      }
+
       const resultado = await connection.invoke<boolean>('CriarSala', sala, usuario);
       if (!resultado) {
         this.error.set('Já existe uma sala com esse código. Tente novamente.');

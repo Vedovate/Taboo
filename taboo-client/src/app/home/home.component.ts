@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LucideArrowRight, LucideHash, LucidePlus } from '@lucide/angular';
 import { GameService } from '../services/game.service';
@@ -10,7 +9,7 @@ import { LogoPlaceholderComponent } from './logo-placeholder/logo-placeholder.co
 @Component({
   standalone: true,
   selector: 'app-home',
-  imports: [CommonModule, TranslatePipe, LucidePlus, LucideHash, LucideArrowRight, LogoPlaceholderComponent],
+  imports: [TranslatePipe, LucidePlus, LucideHash, LucideArrowRight, LogoPlaceholderComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
@@ -45,10 +44,13 @@ export class HomeComponent {
 
       if (this.gameService.connected()) {
         this.generatedRoomCode = roomCode;
-        this.showRoomCode = false;
         this.isHost = true;
         this.hostName = baseName;
         this.router.navigate(['/lobby']);
+        return;
+      }
+
+      if (attempt === 0 && this.gameService.error()) {
         return;
       }
     }

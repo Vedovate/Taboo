@@ -30,6 +30,10 @@
       <h1>{{ 'HOME.WELCOME_TITLE' | translate }}</h1>
     </div>
 
+    @if (gameService.error()) {
+      <p class="error-message">{{ gameService.error() }}</p>
+    }
+
     <div class="hero-grid">
       <section class="hero-panel hero-panel-action">
         <div class="create-room-header">
@@ -41,10 +45,12 @@
           {{ 'HOME.CREATE_ROOM' | translate }}
         </button>
 
-        <div class="room-code-panel" *ngIf="showRoomCode && generatedRoomCode">
-          <span>{{ 'HOME.ROOM_CODE_TEXT' | translate }}:</span>
-          <strong>{{ generatedRoomCode }}</strong>
-        </div>
+        @if (showRoomCode && generatedRoomCode) {
+          <div class="room-code-panel">
+            <span>{{ 'HOME.ROOM_CODE_TEXT' | translate }}:</span>
+            <strong>{{ generatedRoomCode }}</strong>
+          </div>
+        }
 
         <p class="panel-note">{{ 'HOME.CREATE_NOTE' | translate }}</p>
       </section>
@@ -70,7 +76,6 @@
           {{ 'HOME.JOIN_ROOM' | translate }}
         </button>
         <p class="panel-note">{{ 'HOME.JOIN_NOTE' | translate }}</p>
-        <p class="error-message" *ngIf="gameService.error()">{{ gameService.error() }}</p>
       </section>
     </div>
   </main>

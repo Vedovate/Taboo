@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { GameService } from '../services/game.service';
 
 @Component({
   standalone: true,
   selector: 'app-host-lobby',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './host-lobby.component.html',
   styleUrls: ['./host-lobby.component.scss'],
 })
