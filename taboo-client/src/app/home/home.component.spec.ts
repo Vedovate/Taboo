@@ -15,8 +15,6 @@ interface MockGameService {
   createRoom: ReturnType<typeof vi.fn>;
   conectar: ReturnType<typeof vi.fn>;
   clearError: ReturnType<typeof vi.fn>;
-  getRoomCode: ReturnType<typeof vi.fn>;
-  getPlayers: ReturnType<typeof vi.fn>;
 }
 
 interface MockTranslateService {
@@ -45,8 +43,6 @@ describe('HomeComponent', () => {
       createRoom: vi.fn().mockResolvedValue(undefined),
       conectar: vi.fn().mockResolvedValue(undefined),
       clearError: vi.fn(),
-      getRoomCode: vi.fn().mockReturnValue(''),
-      getPlayers: vi.fn().mockReturnValue([]),
     };
 
     mockTranslateService = {
@@ -83,19 +79,19 @@ describe('HomeComponent', () => {
 
   describe('toggleLanguage', () => {
     it('should switch from pt-BR to en-US', () => {
-      component.currentLanguage = 'pt-BR';
+      component.currentLanguage.set('pt-BR');
 
       component.toggleLanguage();
 
-      expect(component.currentLanguage).toBe('en-US');
+      expect(component.currentLanguage()).toBe('en-US');
     });
 
     it('should switch from en-US to pt-BR', () => {
-      component.currentLanguage = 'en-US';
+      component.currentLanguage.set('en-US');
 
       component.toggleLanguage();
 
-      expect(component.currentLanguage).toBe('pt-BR');
+      expect(component.currentLanguage()).toBe('pt-BR');
     });
 
     it('should call translateService.use with new language', () => {
@@ -107,13 +103,13 @@ describe('HomeComponent', () => {
 
   describe('languageFlag', () => {
     it('should return Brazilian flag for pt-BR', () => {
-      component.currentLanguage = 'pt-BR';
-      expect(component.languageFlag).toBe('🇧🇷');
+      component.currentLanguage.set('pt-BR');
+      expect(component.languageFlag()).toBe('🇧🇷');
     });
 
     it('should return US flag for en-US', () => {
-      component.currentLanguage = 'en-US';
-      expect(component.languageFlag).toBe('🇺🇸');
+      component.currentLanguage.set('en-US');
+      expect(component.languageFlag()).toBe('🇺🇸');
     });
   });
 
@@ -127,7 +123,7 @@ describe('HomeComponent', () => {
 
       expect(mockGameService.createRoom).toHaveBeenCalled();
       expect(navigateSpy).toHaveBeenCalledWith(['/lobby']);
-      expect(component.isHost).toBe(true);
+      expect(component.isHost()).toBe(true);
     });
 
     it('should not navigate if createRoom fails', async () => {
@@ -145,7 +141,7 @@ describe('HomeComponent', () => {
     it('should call gameService.conectar and navigate on success', async () => {
       const navigateSpy = vi.spyOn((component as any).router, 'navigate').mockResolvedValue(true);
       mockGameService.connected.set(true);
-      component.roomCode = 'ABC12';
+      component.roomCode.set('ABC12');
 
       await component.joinExistingRoom();
 
@@ -154,7 +150,7 @@ describe('HomeComponent', () => {
     });
 
     it('should set error when room code is empty', async () => {
-      component.roomCode = '';
+      component.roomCode.set('');
 
       await component.joinExistingRoom();
 
@@ -172,7 +168,7 @@ describe('HomeComponent', () => {
 
       component.onRoomCodeInput(event);
 
-      expect(component.roomCode).toBe('ABCD12');
+      expect(component.roomCode()).toBe('ABCD12');
     });
   });
 

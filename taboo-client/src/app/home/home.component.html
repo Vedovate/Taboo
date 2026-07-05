@@ -15,7 +15,7 @@
         (click)="toggleLanguage()"
         aria-label="{{ 'HOME.LANG_TOGGLE_LABEL' | translate }}"
       >
-        <span aria-hidden="true">{{ languageFlag }}</span>
+        <span aria-hidden="true">{{ languageFlag() }}</span>
       </button>
       <nav class="site-nav" aria-label="Primary navigation">
         <a class="nav-link" href="#">{{ 'HOME.NAV_RULES' | translate }}</a>
@@ -45,10 +45,10 @@
           {{ 'HOME.CREATE_ROOM' | translate }}
         </button>
 
-        @if (showRoomCode && generatedRoomCode) {
+        @if (showRoomCode() && generatedRoomCode()) {
           <div class="room-code-panel">
             <span>{{ 'HOME.ROOM_CODE_TEXT' | translate }}:</span>
-            <strong>{{ generatedRoomCode }}</strong>
+            <strong>{{ generatedRoomCode() }}</strong>
           </div>
         }
 
@@ -64,14 +64,14 @@
             <input
               id="roomCode"
               type="text"
-              [value]="roomCode"
+              [value]="roomCode()"
               (input)="onRoomCodeInput($event)"
               placeholder="{{ 'HOME.ROOM_CODE_PLACEHOLDER' | translate }}"
               autocomplete="off"
             />
           </div>
         </div>
-        <button type="button" class="btn btn-secondary" (click)="joinExistingRoom()" [disabled]="!roomCode.trim()">
+        <button type="button" class="btn btn-secondary" (click)="joinExistingRoom()" [disabled]="!roomCode().trim()">
           <svg lucideArrowRight class="icon" aria-hidden="true"></svg>
           {{ 'HOME.JOIN_ROOM' | translate }}
         </button>

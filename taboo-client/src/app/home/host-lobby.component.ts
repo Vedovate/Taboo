@@ -15,14 +15,6 @@ export class HostLobbyComponent {
 
   constructor(private router: Router, public gameService: GameService) {}
 
-  get roomCode(): string {
-    return this.gameService.getRoomCode();
-  }
-
-  get players() {
-    return this.gameService.getPlayers();
-  }
-
   navigateBack(): void {
     this.router.navigate(['/']);
   }

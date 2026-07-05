@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { LucideArrowRight, LucideHash, LucidePlus } from '@lucide/angular';
 import { GameService } from '../services/game.service';
@@ -14,38 +14,39 @@ import { LogoPlaceholderComponent } from './logo-placeholder/logo-placeholder.co
   styleUrls: ['./home.component.scss'],
 })
 export class HomeComponent {
-  currentLanguage = 'pt-BR';
-  roomCode = '';
-  showRoomCode = false;
-  generatedRoomCode = '';
-  isHost = false;
-  hostName = '';
+  currentLanguage = signal('pt-BR');
+  roomCode = signal('');
+  showRoomCode = signal(false);
+  generatedRoomCode = signal('');
+  isHost = signal(false);
+  hostName = signal('');
+
+  readonly languageFlag = computed(() =>
+    this.currentLanguage() === 'pt-BR' ? '🇧🇷' : '🇺🇸'
+  );
 
   constructor(private translateService: TranslateService, private router: Router, public gameService: GameService) {
-    void this.translateService.use(this.currentLanguage);
-  }
-
-  get languageFlag(): string {
-    return this.currentLanguage === 'pt-BR' ? '🇧🇷' : '🇺🇸';
+    void this.translateService.use(this.currentLanguage());
   }
 
   toggleLanguage(): void {
-    this.currentLanguage = this.currentLanguage === 'pt-BR' ? 'en-US' : 'pt-BR';
-    void this.translateService.use(this.currentLanguage);
+    const next = this.currentLanguage() === 'pt-BR' ? 'en-US' : 'pt-BR';
+    this.currentLanguage.set(next);
+    void this.translateService.use(next);
   }
 
   async goToLobby(): Promise<void> {
-    const baseName = this.currentLanguage === 'pt-BR' ? 'Jogador 1' : 'Player 1';
+    const baseName = this.currentLanguage() === 'pt-BR' ? 'Jogador 1' : 'Player 1';
     const maximumAttempts = 10;
 
     for (let attempt = 0; attempt < maximumAttempts; attempt += 1) {
-      const roomCode = this.generateRoomCode();
-      await this.gameService.createRoom(roomCode, baseName);
+      const code = this.generateRoomCode();
+      await this.gameService.createRoom(code, baseName);
 
       if (this.gameService.connected()) {
-        this.generatedRoomCode = roomCode;
-        this.isHost = true;
-        this.hostName = baseName;
+        this.generatedRoomCode.set(code);
+        this.isHost.set(true);
+        this.hostName.set(baseName);
         this.router.navigate(['/lobby']);
         return;
       }
@@ -59,22 +60,22 @@ export class HomeComponent {
   }
 
   toggleRoomCodeVisibility(): void {
-    this.showRoomCode = !this.showRoomCode;
+    this.showRoomCode.update(v => !v);
   }
 
   onRoomCodeInput(event: Event): void {
     const target = event.target as HTMLInputElement;
-    this.roomCode = target.value.toUpperCase();
+    this.roomCode.set(target.value.toUpperCase());
   }
 
   async joinExistingRoom(): Promise<void> {
-    const code = this.roomCode.trim().toUpperCase();
+    const code = this.roomCode().trim().toUpperCase();
     if (!code) {
       this.gameService.error.set(this.translateService.instant('HOME.ERROR_ENTER_CODE'));
       return;
     }
 
-    const baseName = this.currentLanguage === 'pt-BR' ? 'Jogador 2' : 'Player 2';
+    const baseName = this.currentLanguage() === 'pt-BR' ? 'Jogador 2' : 'Player 2';
     await this.gameService.conectar(code, baseName);
 
     if (this.gameService.connected()) {

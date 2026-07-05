@@ -1,15 +1,11 @@
-// src/app/services/game.service.ts
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
-
-interface LobbyPlayer {
-  name: string;
-  isHost: boolean;
-}
+import { environment } from '../../environments/environment';
+import { LobbyPlayer } from '../models/lobby-player';
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
-  private readonly hubUrl = 'http://localhost:5123/gamehub';
+  private readonly hubUrl = environment.signalR.hubUrl;
   private hubConnection?: HubConnection;
   private currentRoomCode = '';
   private userName = '';
@@ -21,6 +17,7 @@ export class GameService {
   readonly connected = signal(false);
   readonly roomCode = signal('');
   readonly players = signal<LobbyPlayer[]>([]);
+  readonly playerCount = computed(() => this.players().length);
 
   async conectar(codigoSala: string, nomeUsuario: string): Promise<void> {
     const sala = codigoSala.trim();
@@ -131,14 +128,6 @@ export class GameService {
 
   clearError(): void {
     this.error.set('');
-  }
-
-  getRoomCode(): string {
-    return this.currentRoomCode;
-  }
-
-  getPlayers(): { name: string; isHost: boolean }[] {
-    return this.players();
   }
 
   private getOrCreateConnection(): HubConnection {

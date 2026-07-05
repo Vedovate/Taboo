@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Taboo.Api.Hubs;
 using Taboo.Api.Services;
@@ -15,7 +16,7 @@ public class GameHubTests
 
     public GameHubTests()
     {
-        _gameManager = new GameManager();
+        _gameManager = new GameManager(NullLogger<GameManager>.Instance);
         _mockClients = new Mock<IHubCallerClients>();
         _mockClientProxy = new Mock<IClientProxy>();
         _mockContext = new Mock<HubCallerContext>();
@@ -33,7 +34,7 @@ public class GameHubTests
 
     private GameHub CreateHub()
     {
-        return new GameHub(_gameManager)
+        return new GameHub(_gameManager, NullLogger<GameHub>.Instance)
         {
             Clients = _mockClients.Object,
             Context = _mockContext.Object,

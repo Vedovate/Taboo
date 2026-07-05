@@ -1,7 +1,7 @@
 <section class="lobby-shell">
   <header class="lobby-header">
     <div>
-      <p class="lobby-label">LOBBY DA PARTIDA - SALA <span>[{{ roomCode }}]</span></p>
+      <p class="lobby-label">LOBBY DA PARTIDA - SALA <span>[{{ gameService.roomCode() }}]</span></p>
     </div>
     <button class="btn btn-secondary" (click)="navigateBack()">VOLTAR</button>
   </header>
@@ -40,7 +40,7 @@
       </div>
 
       <ul class="player-list">
-        @for (player of players; track $index; let index = $index) {
+        @for (player of gameService.players(); track $index; let index = $index) {
           <li class="player-row">
             <span class="player-slot">{{ index + 1 }}</span>
             <strong>{{ player.name }}</strong>

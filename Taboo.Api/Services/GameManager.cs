@@ -1,12 +1,16 @@
-// src/Taboo.Api/Services/GameManager.cs
 using System.Collections.Concurrent;
-using System.Linq;
 using Taboo.Api.Models;
 
 namespace Taboo.Api.Services;
 
 public class GameManager : IGameManager
 {
+    private readonly ILogger<GameManager> _logger;
+
+    public GameManager(ILogger<GameManager> logger)
+    {
+        _logger = logger;
+    }
     public ConcurrentDictionary<string, GameRoom> GameRooms { get; } = new();
 
     public GameRoom GetOrCreateRoom(string roomCode)
@@ -31,6 +35,7 @@ public class GameManager : IGameManager
 
         if (!GameRooms.TryAdd(roomCode, newRoom))
         {
+            _logger.LogWarning("Falha ao criar sala {RoomCode} — já existe", roomCode);
             return false;
         }
 
@@ -44,6 +49,7 @@ public class GameManager : IGameManager
             });
         }
 
+        _logger.LogInformation("Sala {RoomCode} criada por {UserName} ({ConnectionId})", roomCode, userName, connectionId);
         return true;
     }
 
@@ -51,6 +57,7 @@ public class GameManager : IGameManager
     {
         if (!GameRooms.TryGetValue(roomCode, out var gameRoom))
         {
+            _logger.LogWarning("Tentativa de adicionar jogador a sala inexistente {RoomCode}", roomCode);
             return;
         }
 
@@ -64,10 +71,12 @@ public class GameManager : IGameManager
                     ConnectionId = connectionId,
                     Name = userName
                 });
+                _logger.LogInformation("Jogador {UserName} ({ConnectionId}) entrou na sala {RoomCode}", userName, connectionId, roomCode);
                 return;
             }
 
             player.Name = userName;
+            _logger.LogInformation("Jogador {UserName} ({ConnectionId}) reconectou na sala {RoomCode}", userName, connectionId, roomCode);
         }
     }
 
@@ -88,6 +97,7 @@ public class GameManager : IGameManager
     {
         if (!GameRooms.TryGetValue(roomCode, out var gameRoom))
         {
+            _logger.LogWarning("Tentativa de remover jogador de sala inexistente {RoomCode}", roomCode);
             return;
         }
 
@@ -96,14 +106,18 @@ public class GameManager : IGameManager
             var player = gameRoom.Players.FirstOrDefault(item => item.ConnectionId == connectionId);
             if (player is null)
             {
+                _logger.LogWarning("Jogador {ConnectionId} não encontrado na sala {RoomCode}", connectionId, roomCode);
                 return;
             }
 
+            var userName = player.Name;
             gameRoom.Players.Remove(player);
+            _logger.LogInformation("Jogador {UserName} ({ConnectionId}) saiu da sala {RoomCode}", userName, connectionId, roomCode);
 
             if (gameRoom.Players.Count == 0)
             {
                 GameRooms.TryRemove(roomCode, out _);
+                _logger.LogInformation("Sala {RoomCode} removida — sem jogadores restantes", roomCode);
             }
         }
     }
@@ -136,6 +150,7 @@ public class GameManager : IGameManager
             }
         }
 
+        _logger.LogDebug("Nenhuma sala encontrada para conexão {ConnectionId}", connectionId);
         return null;
     }
 }

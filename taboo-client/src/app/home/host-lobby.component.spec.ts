@@ -10,8 +10,6 @@ interface MockGameService {
   roomCode: WritableSignal<string>;
   players: WritableSignal<{ name: string; isHost: boolean }[]>;
   messages: WritableSignal<string[]>;
-  getRoomCode: ReturnType<typeof vi.fn>;
-  getPlayers: ReturnType<typeof vi.fn>;
   createRoom: ReturnType<typeof vi.fn>;
   conectar: ReturnType<typeof vi.fn>;
   clearError: ReturnType<typeof vi.fn>;
@@ -32,11 +30,6 @@ describe('HostLobbyComponent', () => {
         { name: 'Player2', isHost: false },
       ]),
       messages: signal([]),
-      getRoomCode: vi.fn().mockReturnValue('ABC12'),
-      getPlayers: vi.fn().mockReturnValue([
-        { name: 'Player1', isHost: true },
-        { name: 'Player2', isHost: false },
-      ]),
       createRoom: vi.fn().mockResolvedValue(undefined),
       conectar: vi.fn().mockResolvedValue(undefined),
       clearError: vi.fn(),
@@ -62,7 +55,6 @@ describe('HostLobbyComponent', () => {
   it('should display room code from gameService', () => {
     const lobbyLabel = fixture.nativeElement.querySelector('.lobby-label');
     expect(lobbyLabel.textContent).toContain('ABC12');
-    expect(component.roomCode).toBe('ABC12');
   });
 
   it('should display player list from gameService', () => {

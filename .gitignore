@@ -47,7 +47,7 @@ mshtml.tlb
 
 # Segredos e configurações locais (opcional)
 # Se você quiser que o appsettings.Development.json não vá para o git, descomente a linha abaixo:
-# appsettings.Development.json
+appsettings.Development.json
 
 # Banco de dados local (SQLite)
 # Evita enviar o arquivo de banco de dados local gerado em tempo de execução

@@ -34,8 +34,27 @@ Caso qualquer teste falhe:
 ## 4. Autorização de Commit
 Você possui autorização para rodar `git add` e `git commit` **apenas** quando o terminal confirmar que todos os testes passaram. Na mensagem de commit, inclua uma linha ao final atestando a integridade (ex: `[Testes: Aprovados em taboo-client e/ou Taboo.Api]`). 
 
-## 5. Estrutura do Projeto
-- **Backend**: `Taboo.Api/` - API baseada em SignalR (não REST)
+## 5. Convenções Obrigatórias
+
+### Backend (C# .NET 9 + SignalR)
+
+- **DI**: Sempre registre interfaces, não classes concretas. Ex.: `AddSingleton<IGameManager, GameManager>()`
+- **DTOs**: Hub methods nunca devem retornar anonymous types. Crie `PlayerDto` e similares em `Taboo.Api/DTOs/`
+- **Logging**: Injete `ILogger<T>` em todo service e hub. Em testes use `NullLogger<T>.Instance`
+- **Error Handling**: Use `IHubFilter` global (em `Taboo.Api/Filters/`) para capturar exceções não tratadas nos hubs
+- **SQL Scripts**: Arquivos `.sql` devem ser Embedded Resource no `.csproj`, lidos via `Assembly.GetManifestResourceStream()` — nunca por caminho de arquivo
+- **Connection Strings**: O `Program.cs` deve resolver o path absoluto; a string de configuração contém só o nome do arquivo (`Data Source=TabooGame.db`)
+
+### Frontend (Angular 22 + Signals + Vitest)
+
+- **Environment**: URLs de API/hubs nunca hardcoded. Sempre usar `src/environments/environment.ts`
+- **Modelos**: Interfaces de domínio em `src/app/models/`, nunca inline em services
+- **Reatividade**: Estado local de componentes deve usar `signal()` (nunca campos plain). Derived state use `computed()`. Leiam signals diretamente (`signal()`), nunca via getters síncronos
+- **Pipe de tradução**: Usar `pure: true` com `effect()` e `ChangeDetectorRef.markForCheck()`, nunca `pure: false`
+- **Código morto**: Remova arquivos não utilizados (ex.: `app.html` placeholder, `app.module.ts` vazio, componentes sem rota)
+
+## 6. Estrutura do Projeto
+- **Backend**: `Taboo.Api/` - API baseada em SignalR (pode conter rest se for explicitamente solicitado)
 - **Frontend**: `taboo-client/` - Angular 22 com Standalone Components e Signals
 - **Testes Backend**: `api/tests/Taboo.Api.Tests/` - xUnit + Moq
 - **Testes Frontend**: `taboo-client/src/**/*.spec.ts` - Vitest via Angular builder

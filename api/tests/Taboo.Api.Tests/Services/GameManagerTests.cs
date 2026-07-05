@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Taboo.Api.Services;
 
 namespace Taboo.Api.Tests.Services;
@@ -8,7 +9,7 @@ public class GameManagerTests
 
     public GameManagerTests()
     {
-        _sut = new GameManager();
+        _sut = new GameManager(NullLogger<GameManager>.Instance);
     }
 
     [Fact]

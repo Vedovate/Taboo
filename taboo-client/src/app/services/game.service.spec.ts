@@ -238,20 +238,4 @@ describe('GameService', () => {
       expect(service.error()).toBe('');
     });
   });
-
-  describe('getters', () => {
-    it('getRoomCode should return current room code', async () => {
-      signalrMock.mockConnection.invoke.mockResolvedValue(true);
-      await service.createRoom('ABC12', 'Player1');
-
-      expect(service.getRoomCode()).toBe('ABC12');
-    });
-
-    it('getPlayers should return current players', async () => {
-      signalrMock.mockConnection.invoke.mockResolvedValue(true);
-      await service.createRoom('ABC12', 'Player1');
-
-      expect(service.getPlayers()).toEqual([{ name: 'Player1', isHost: true }]);
-    });
-  });
 });

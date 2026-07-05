@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.SignalR;
 using Taboo.Api.Database;
+using Taboo.Api.Filters;
 using Taboo.Api.Hubs;
 using Taboo.Api.Services;
 
@@ -10,8 +12,11 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-// Adiciona SignalR ao contêiner de serviços.
-builder.Services.AddSignalR();
+// Adiciona SignalR ao contêiner de serviços com filtro global de erros.
+builder.Services.AddSignalR(hubOptions =>
+{
+    hubOptions.AddFilter(new GameHubFilter());
+});
 
 builder.Services.AddCors(options =>
 {
@@ -24,18 +29,16 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSingleton<GameManager>();
+builder.Services.AddSingleton<IGameManager, GameManager>();
 
 var app = builder.Build();
 var connectionString = app.Configuration.GetConnectionString("SqliteConnection");
 
 if (!string.IsNullOrEmpty(connectionString))
 {
-    if (connectionString.StartsWith("Data Source=") && !connectionString.Contains('/') && !connectionString.Contains('\\'))
-    {
-        var fileName = connectionString.Replace("Data Source=", "");
-        connectionString = $"Data Source={Path.Combine(app.Environment.ContentRootPath + "/Database", fileName)}";
-    }
+    var fileName = connectionString.Replace("Data Source=", "");
+    var fullPath = Path.Combine(app.Environment.ContentRootPath, "Database", fileName);
+    connectionString = $"Data Source={fullPath}";
 
     DbInitializer.Initialize(connectionString);
 }
