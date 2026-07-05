@@ -130,6 +130,20 @@
   align-items: stretch;
 }
 
+.hero-panel-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1.5rem;
+}
+
+.hero-panel-action .btn {
+  width: 100%;
+  max-width: 100%;
+}
+
 .create-room-header {
   display: flex;
   align-items: center;
