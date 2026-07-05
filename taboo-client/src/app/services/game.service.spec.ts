@@ -5,6 +5,7 @@ const signalrMock = vi.hoisted(() => {
   const handlers = new Map<string, (...args: any[]) => void>();
 
   const mockConnection = {
+    connectionId: 'conn1',
     state: 'Disconnected' as string,
     start: vi.fn().mockImplementation(() => {
       mockConnection.state = 'Connected';
@@ -79,7 +80,7 @@ describe('GameService', () => {
 
       expect(service.connected()).toBe(true);
       expect(service.roomCode()).toBe('ABC12');
-      expect(service.players()).toEqual([{ name: 'Player1', isHost: true }]);
+      expect(service.meuConnectionId()).toBe('conn1');
       expect(service.error()).toBe('');
     });
 
@@ -90,6 +91,7 @@ describe('GameService', () => {
 
       expect(service.connected()).toBe(false);
       expect(service.error()).toBeTruthy();
+      expect(service.errorTimeLeft()).toBe(8);
     });
 
     it('should set error when input is empty', async () => {
@@ -125,6 +127,7 @@ describe('GameService', () => {
 
       expect(service.connected()).toBe(true);
       expect(service.roomCode()).toBe('ABC12');
+      expect(service.meuConnectionId()).toBe('conn1');
     });
 
     it('should set error when room not found', async () => {
@@ -193,6 +196,8 @@ describe('GameService', () => {
       expect(service.players()).toEqual([]);
       expect(service.messages()).toEqual([]);
       expect(service.error()).toBe('');
+      expect(service.errorTimeLeft()).toBe(0);
+      expect(service.meuConnectionId()).toBe('');
     });
   });
 
@@ -211,14 +216,71 @@ describe('GameService', () => {
       await service.conectar('ABC12', 'Player2');
 
       signalrMock.triggerEvent('AtualizarJogadores', [
-        { name: 'Player1', isHost: true },
-        { name: 'Player2', isHost: false },
+        { connectionId: 'conn1', name: 'Player1', isHost: true },
+        { connectionId: 'conn2', name: 'Player2', isHost: false },
       ]);
 
       expect(service.players()).toEqual([
-        { name: 'Player1', isHost: true },
-        { name: 'Player2', isHost: false },
+        { connectionId: 'conn1', name: 'Player1', isHost: true },
+        { connectionId: 'conn2', name: 'Player2', isHost: false },
       ]);
+    });
+
+    it('should set error and isRoomFull when SalaCheia is received', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+
+      signalrMock.triggerEvent('SalaCheia', 'A sala já está cheia.');
+
+      expect(service.error()).toBe('A sala já está cheia.');
+      expect(service.isRoomFull()).toBe(true);
+    });
+
+    it('should not override SalaCheia error with "Sala não encontrada"', async () => {
+      signalrMock.mockConnection.invoke.mockImplementation(async () => {
+        signalrMock.triggerEvent('SalaCheia', 'A sala já está cheia.');
+        return false;
+      });
+
+      await service.conectar('ABC12', 'Player2');
+
+      expect(service.error()).toBe('A sala já está cheia.');
+      expect(service.isRoomFull()).toBe(true);
+    });
+
+    it('should auto-rename when player name matches connectionId on AtualizarJogadores', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+
+      signalrMock.triggerEvent('AtualizarJogadores', [
+        { connectionId: 'conn1', name: 'conn1', isHost: true },
+      ]);
+
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('AlterarNome', 'ABC12', 'Jogador 1');
+    });
+
+    it('should not auto-rename when player name is already set', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+
+      signalrMock.triggerEvent('AtualizarJogadores', [
+        { connectionId: 'conn1', name: 'Player1', isHost: true },
+      ]);
+
+      expect(signalrMock.mockConnection.invoke).not.toHaveBeenCalledWith('AlterarNome', expect.any(String), expect.any(String));
+    });
+
+    it('should compute nomeFinalizado as true when name differs from connectionId', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+
+      expect(service.nomeFinalizado()).toBe(false);
+
+      signalrMock.triggerEvent('AtualizarJogadores', [
+        { connectionId: 'conn1', name: 'Player1', isHost: true },
+      ]);
+
+      expect(service.nomeFinalizado()).toBe(true);
     });
 
     it('should set connected false on reconnecting', () => {
@@ -229,13 +291,15 @@ describe('GameService', () => {
   });
 
   describe('clearError', () => {
-    it('should clear the error signal', () => {
+    it('should clear the error and errorTimeLeft signals', () => {
       service.error.set('Some error');
+      service.errorTimeLeft.set(8);
       expect(service.error()).toBe('Some error');
 
       service.clearError();
 
       expect(service.error()).toBe('');
+      expect(service.errorTimeLeft()).toBe(0);
     });
   });
 });

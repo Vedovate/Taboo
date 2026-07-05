@@ -9,27 +9,36 @@ export class GameService {
   private hubConnection?: HubConnection;
   private currentRoomCode = '';
   private userName = '';
-  
-  // Sinal para armazenar mensagens de erro temporárias
+  private errorTimeout: ReturnType<typeof setTimeout> | null = null;
+  private errorCountdownInterval: ReturnType<typeof setInterval> | null = null;
+
   readonly error = signal<string>('');
+  readonly errorTimeLeft = signal(0);
+  readonly isRoomFull = signal(false);
 
   readonly messages = signal<string[]>([]);
   readonly connected = signal(false);
   readonly roomCode = signal('');
   readonly players = signal<LobbyPlayer[]>([]);
   readonly playerCount = computed(() => this.players().length);
+  readonly meuConnectionId = signal('');
+  readonly nomeFinalizado = computed(() => {
+    const eu = this.players().find(p => p.connectionId === this.meuConnectionId());
+    return eu ? eu.name !== eu.connectionId : false;
+  });
 
   async conectar(codigoSala: string, nomeUsuario: string): Promise<void> {
     const sala = codigoSala.trim();
     const usuario = nomeUsuario.trim();
 
     if (!sala || !usuario) {
-      this.error.set('Por favor, preencha o código da sala e seu nome.');
+      this.setError('Por favor, preencha o código da sala e seu nome.');
       return;
     }
 
-    // Limpa erro anterior ao tentar conectar
-    this.error.set('');
+    this.clearError();
+    this.isRoomFull.set(false);
+    this.connected.set(false);
     this.currentRoomCode = sala;
     this.roomCode.set(sala);
     this.userName = usuario;
@@ -41,19 +50,21 @@ export class GameService {
       if (connection.state !== HubConnectionState.Connected) {
         await connection.start();
       }
+      this.meuConnectionId.set(connection.connectionId ?? '');
 
       const resultado = await connection.invoke<boolean>('EntrarNaSala', sala, usuario);
       if (!resultado) {
-        this.error.set('Sala não encontrada. Verifique o código e tente novamente.');
+        if (!this.isRoomFull()) {
+          this.setError('Sala não encontrada. Verifique o código e tente novamente.');
+        }
         return;
       }
       this.connected.set(true);
-      this.players.set([{ name: usuario, isHost: false }]);
     } catch (error: any) {
       console.error('Erro ao conectar:', error);
       const errorMsg = error?.message || 'Ocorreu um erro desconhecido.';
       if (!errorMsg.includes('already connected')) {
-        this.error.set(errorMsg);
+        this.setError(errorMsg);
       } else {
         this.connected.set(true);
       }
@@ -83,12 +94,20 @@ export class GameService {
       this.connected.set(false);
       this.players.set([]);
       this.messages.set([]);
+      this.meuConnectionId.set('');
       
-      // Limpa erro ao desconectar com sucesso
       this.error.set('');
+      this.errorTimeLeft.set(0);
     } catch (error: any) {
       console.error('Erro ao desconectar:', error);
     }
+  }
+
+  async alterarNome(novoNome: string): Promise<void> {
+    if (!this.hubConnection || !this.currentRoomCode) {
+      return;
+    }
+    await this.hubConnection.invoke('AlterarNome', this.currentRoomCode, novoNome);
   }
 
   async createRoom(codigoSala: string, nomeUsuario: string): Promise<void> {
@@ -96,11 +115,11 @@ export class GameService {
     const usuario = nomeUsuario.trim();
 
     if (!sala || !usuario) {
-      this.error.set('Por favor, preencha o código da sala e seu nome.');
+      this.setError('Por favor, preencha o código da sala e seu nome.');
       return;
     }
 
-    this.error.set('');
+    this.clearError();
     this.currentRoomCode = sala;
     this.roomCode.set(sala);
     this.userName = usuario;
@@ -112,22 +131,57 @@ export class GameService {
       if (connection.state !== HubConnectionState.Connected) {
         await connection.start();
       }
+      this.meuConnectionId.set(connection.connectionId ?? '');
 
       const resultado = await connection.invoke<boolean>('CriarSala', sala, usuario);
       if (!resultado) {
-        this.error.set('Já existe uma sala com esse código. Tente novamente.');
+        this.setError('Já existe uma sala com esse código. Tente novamente.');
         return;
       }
       this.connected.set(true);
-      this.players.set([{ name: usuario, isHost: true }]);
     } catch (error: any) {
       console.error('Erro ao criar sala:', error);
-      this.error.set(error?.message || 'Ocorreu um erro ao criar a sala.');
+      this.setError(error?.message || 'Ocorreu um erro ao criar a sala.');
     }
+  }
+
+  setError(msg: string): void {
+    this.clearError();
+    this.error.set(msg);
+    this.errorTimeLeft.set(8);
+    this.errorCountdownInterval = setInterval(() => {
+      this.errorTimeLeft.update(v => {
+        if (v <= 1) {
+          this.error.set('');
+          this.errorTimeLeft.set(0);
+          if (this.errorCountdownInterval) {
+            clearInterval(this.errorCountdownInterval);
+            this.errorCountdownInterval = null;
+          }
+          return 0;
+        }
+        return v - 1;
+      });
+    }, 1000);
+    this.errorTimeout = setTimeout(() => {
+      if (this.errorCountdownInterval) {
+        clearInterval(this.errorCountdownInterval);
+        this.errorCountdownInterval = null;
+      }
+    }, 8000);
   }
 
   clearError(): void {
     this.error.set('');
+    this.errorTimeLeft.set(0);
+    if (this.errorTimeout) {
+      clearTimeout(this.errorTimeout);
+      this.errorTimeout = null;
+    }
+    if (this.errorCountdownInterval) {
+      clearInterval(this.errorCountdownInterval);
+      this.errorCountdownInterval = null;
+    }
   }
 
   private getOrCreateConnection(): HubConnection {
@@ -155,6 +209,16 @@ export class GameService {
 
     this.hubConnection.on('AtualizarJogadores', (players: LobbyPlayer[]) => {
       this.players.set(players);
+      const eu = players.find(p => p.connectionId === this.meuConnectionId());
+      if (eu && eu.name === this.meuConnectionId()) {
+        const novoNome = `Jogador ${players.length}`;
+        this.alterarNome(novoNome);
+      }
+    });
+
+    this.hubConnection.on('SalaCheia', (message: string) => {
+      this.isRoomFull.set(true);
+      this.setError(message);
     });
 
     this.hubConnection.onreconnecting(() => {

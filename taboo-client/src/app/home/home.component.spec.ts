@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { signal, WritableSignal } from '@angular/core';
+import { computed, signal, WritableSignal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { HomeComponent } from './home.component';
 import { GameService } from '../services/game.service';
@@ -8,12 +8,15 @@ import { TranslateService } from '../services/translate.service';
 
 interface MockGameService {
   error: WritableSignal<string>;
+  errorTimeLeft: WritableSignal<number>;
   connected: WritableSignal<boolean>;
   roomCode: WritableSignal<string>;
-  players: WritableSignal<{ name: string; isHost: boolean }[]>;
+  players: WritableSignal<{ connectionId: string; name: string; isHost: boolean }[]>;
   messages: WritableSignal<string[]>;
+  playerCount: ReturnType<typeof computed>;
   createRoom: ReturnType<typeof vi.fn>;
   conectar: ReturnType<typeof vi.fn>;
+  setError: ReturnType<typeof vi.fn>;
   clearError: ReturnType<typeof vi.fn>;
 }
 
@@ -34,14 +37,19 @@ describe('HomeComponent', () => {
   let mockTranslateService: MockTranslateService;
 
   beforeEach(async () => {
+    const playersSignal = signal<{ connectionId: string; name: string; isHost: boolean }[]>([]);
+
     mockGameService = {
       error: signal(''),
+      errorTimeLeft: signal(0),
       connected: signal(false),
       roomCode: signal(''),
-      players: signal([]),
+      players: playersSignal,
       messages: signal([]),
+      playerCount: computed(() => playersSignal().length),
       createRoom: vi.fn().mockResolvedValue(undefined),
       conectar: vi.fn().mockResolvedValue(undefined),
+      setError: vi.fn(),
       clearError: vi.fn(),
     };
 
@@ -145,7 +153,7 @@ describe('HomeComponent', () => {
 
       await component.joinExistingRoom();
 
-      expect(mockGameService.conectar).toHaveBeenCalledWith('ABC12', 'Jogador 2');
+      expect(mockGameService.conectar).toHaveBeenCalledWith('ABC12', 'Jogador 1');
       expect(navigateSpy).toHaveBeenCalledWith(['/lobby']);
     });
 
@@ -154,7 +162,7 @@ describe('HomeComponent', () => {
 
       await component.joinExistingRoom();
 
-      expect(mockGameService.error()).toBeTruthy();
+      expect(mockGameService.setError).toHaveBeenCalled();
       expect(mockGameService.conectar).not.toHaveBeenCalled();
     });
   });

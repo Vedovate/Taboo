@@ -1,3 +1,3 @@
 namespace Taboo.Api.DTOs;
 
-public record PlayerDto(string Name, bool IsHost);
+public record PlayerDto(string ConnectionId, string Name, bool IsHost);

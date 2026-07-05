@@ -5,11 +5,12 @@ import { GameService } from '../services/game.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { TranslateService } from '../services/translate.service';
 import { LogoPlaceholderComponent } from './logo-placeholder/logo-placeholder.component';
+import { ErrorMessageComponent } from '../shared/error-message/error-message.component';
 
 @Component({
   standalone: true,
   selector: 'app-home',
-  imports: [TranslatePipe, LucidePlus, LucideHash, LucideArrowRight, LogoPlaceholderComponent],
+  imports: [TranslatePipe, LucidePlus, LucideHash, LucideArrowRight, LogoPlaceholderComponent, ErrorMessageComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
@@ -56,7 +57,7 @@ export class HomeComponent {
       }
     }
 
-    this.gameService.error.set(this.translateService.instant('HOME.ERROR_CREATE_ROOM_UNIQUE'));
+    this.gameService.setError(this.translateService.instant('HOME.ERROR_CREATE_ROOM_UNIQUE'));
   }
 
   toggleRoomCodeVisibility(): void {
@@ -71,11 +72,11 @@ export class HomeComponent {
   async joinExistingRoom(): Promise<void> {
     const code = this.roomCode().trim().toUpperCase();
     if (!code) {
-      this.gameService.error.set(this.translateService.instant('HOME.ERROR_ENTER_CODE'));
+      this.gameService.setError(this.translateService.instant('HOME.ERROR_ENTER_CODE'));
       return;
     }
 
-    const baseName = this.currentLanguage() === 'pt-BR' ? 'Jogador 2' : 'Player 2';
+    const baseName = this.currentLanguage() === 'pt-BR' ? `Jogador ${this.gameService.playerCount() + 1}` : `Player ${this.gameService.playerCount() + 1}`;
     await this.gameService.conectar(code, baseName);
 
     if (this.gameService.connected()) {

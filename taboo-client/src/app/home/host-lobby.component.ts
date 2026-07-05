@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { GameService } from '../services/game.service';
+import { LobbyPlayer } from '../models/lobby-player';
 
 @Component({
   standalone: true,
@@ -14,6 +15,11 @@ export class HostLobbyComponent {
   maxScore = 1;
 
   constructor(private router: Router, public gameService: GameService) {}
+
+  canEdit(player: LobbyPlayer): boolean {
+    return player.connectionId === this.gameService.meuConnectionId()
+      && this.gameService.nomeFinalizado();
+  }
 
   navigateBack(): void {
     this.router.navigate(['/']);

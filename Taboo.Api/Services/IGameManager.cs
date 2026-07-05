@@ -16,7 +16,11 @@ public interface IGameManager
 
     bool RoomExists(string roomCode);
 
+    GameRoom? GetRoom(string roomCode);
+
     string? TryGetPlayerName(string roomCode, string connectionId);
 
     string? GetRoomCodeByConnectionId(string connectionId);
+
+    string? RenamePlayer(string roomCode, string connectionId, string newName);
 }

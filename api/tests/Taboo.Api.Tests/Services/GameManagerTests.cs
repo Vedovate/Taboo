@@ -49,7 +49,7 @@ public class GameManagerTests
 
         var players = _sut.GetPlayersInRoom("ABC12");
         Assert.Equal(2, players.Count);
-        Assert.Contains(players, p => p.Name == "Player2" && p.ConnectionId == "conn2");
+        Assert.Contains(players, p => p.Name == "conn2" && p.ConnectionId == "conn2");
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class GameManagerTests
         var players = _sut.GetPlayersInRoom("ABC12");
         Assert.Equal(2, players.Count);
         var player = Assert.Single(players, p => p.ConnectionId == "conn2");
-        Assert.Equal("Player2Renamed", player.Name);
+        Assert.Equal("conn2", player.Name);
     }
 
     [Fact]
@@ -229,6 +229,94 @@ public class GameManagerTests
     }
 
     [Fact]
+    public void RenamePlayer_ExistingPlayer_UpdatesName()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "conn2");
+
+        var result = _sut.RenamePlayer("ABC12", "conn2", "Player2");
+
+        Assert.Equal("Player2", result);
+        var players = _sut.GetPlayersInRoom("ABC12");
+        var player = Assert.Single(players, p => p.ConnectionId == "conn2");
+        Assert.Equal("Player2", player.Name);
+    }
+
+    [Fact]
+    public void RenamePlayer_DuplicateName_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "conn2");
+
+        var result = _sut.RenamePlayer("ABC12", "conn2", "Player1");
+
+        Assert.Null(result);
+        var players = _sut.GetPlayersInRoom("ABC12");
+        var player = Assert.Single(players, p => p.ConnectionId == "conn2");
+        Assert.Equal("conn2", player.Name);
+    }
+
+    [Fact]
+    public void RenamePlayer_NonExistentPlayer_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.RenamePlayer("ABC12", "nonExistent", "Player2");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void RenamePlayer_NonExistentRoom_ReturnsNull()
+    {
+        var result = _sut.RenamePlayer("NONEXIST", "conn1", "Player1");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void AddPlayerToRoom_ConnectionIdIsName()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "AnyName");
+
+        var players = _sut.GetPlayersInRoom("ABC12");
+        var player = Assert.Single(players, p => p.ConnectionId == "conn2");
+        Assert.Equal("conn2", player.Name);
+    }
+
+    [Fact]
+    public void GetRoom_ExistingRoom_ReturnsRoom()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var room = _sut.GetRoom("ABC12");
+
+        Assert.NotNull(room);
+        Assert.Equal("ABC12", room.RoomCode);
+        Assert.Single(room.Players);
+    }
+
+    [Fact]
+    public void GetRoom_NonExistentRoom_ReturnsNull()
+    {
+        var room = _sut.GetRoom("NONEXIST");
+
+        Assert.Null(room);
+    }
+
+    [Fact]
+    public void GetRoom_MaxPlayers_DefaultsTo3()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var room = _sut.GetRoom("ABC12");
+
+        Assert.NotNull(room);
+        Assert.Equal(3, room.MaxPlayers);
+    }
+
+    [Fact]
     public void MultipleRooms_AreIndependent()
     {
         _sut.CreateRoom("ABC12", "conn1", "Player1");
@@ -241,5 +329,18 @@ public class GameManagerTests
         Assert.Equal("Player1", room1Players[0].Name);
         Assert.Single(room2Players);
         Assert.Equal("Player2", room2Players[0].Name);
+    }
+
+    [Fact]
+    public void RemovePlayerFromRoom_ExistingPlayer_DoesNotRemoveRoomIfPlayersRemain()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "ignored");
+        _sut.RemovePlayerFromRoom("ABC12", "conn1");
+
+        Assert.True(_sut.RoomExists("ABC12"));
+        var players = _sut.GetPlayersInRoom("ABC12");
+        Assert.Single(players);
+        Assert.Equal("conn2", players[0].ConnectionId);
     }
 }

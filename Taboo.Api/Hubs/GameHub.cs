@@ -33,15 +33,23 @@ public class GameHub : Hub
             return false;
         }
 
+        var gameRoom = _gameManager.GetRoom(sala);
+        if (gameRoom is not null && gameRoom.Players.Count >= gameRoom.MaxPlayers)
+        {
+            _logger.LogWarning("EntrarNaSala: sala {Sala} está cheia ({Count}/{Max})", sala, gameRoom.Players.Count, gameRoom.MaxPlayers);
+            await Clients.Caller.SendAsync("SalaCheia", "A sala já está cheia.");
+            return false;
+        }
+
         _gameManager.AddPlayerToRoom(sala, Context.ConnectionId, usuario);
         await Groups.AddToGroupAsync(Context.ConnectionId, sala);
 
         var players = _gameManager.GetPlayersInRoom(sala)
-            .Select(player => new PlayerDto(player.Name, player.IsHost))
+            .Select(player => new PlayerDto(player.ConnectionId, player.Name, player.IsHost))
             .ToList();
 
         await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
-        _logger.LogInformation("Jogador {Usuario} entrou na sala {Sala}", usuario, sala);
+        _logger.LogInformation("Jogador {ConnectionId} entrou na sala {Sala}", Context.ConnectionId, sala);
         return true;
     }
 
@@ -64,7 +72,7 @@ public class GameHub : Hub
 
         await Groups.AddToGroupAsync(Context.ConnectionId, sala);
         var players = _gameManager.GetPlayersInRoom(sala)
-            .Select(player => new PlayerDto(player.Name, player.IsHost))
+            .Select(player => new PlayerDto(player.ConnectionId, player.Name, player.IsHost))
             .ToList();
 
         await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
@@ -94,6 +102,32 @@ public class GameHub : Hub
         _logger.LogDebug("Mensagem enviada por {Usuario} na sala {Sala}", nomeUsuario, sala);
     }
 
+    public async Task AlterarNome(string codigoSala, string novoNome)
+    {
+        var sala = codigoSala.Trim();
+        var nome = novoNome.Trim();
+
+        if (string.IsNullOrWhiteSpace(sala) || string.IsNullOrWhiteSpace(nome))
+        {
+            _logger.LogWarning("AlterarNome chamado com dados inválidos");
+            return;
+        }
+
+        var resultado = _gameManager.RenamePlayer(sala, Context.ConnectionId, nome);
+        if (resultado is null)
+        {
+            _logger.LogWarning("AlterarNome: não foi possível renomear {ConnectionId} para {Nome} na sala {Sala}", Context.ConnectionId, nome, sala);
+            return;
+        }
+
+        var players = _gameManager.GetPlayersInRoom(sala)
+            .Select(player => new PlayerDto(player.ConnectionId, player.Name, player.IsHost))
+            .ToList();
+
+        await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
+        _logger.LogInformation("Jogador {ConnectionId} renomeado para {Nome} na sala {Sala}", Context.ConnectionId, nome, sala);
+    }
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
@@ -103,6 +137,12 @@ public class GameHub : Hub
             _logger.LogInformation("Conexão {ConnectionId} desconectada da sala {Sala}", Context.ConnectionId, sala);
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, sala);
             _gameManager.RemovePlayerFromRoom(sala, Context.ConnectionId);
+
+            var players = _gameManager.GetPlayersInRoom(sala)
+                .Select(player => new PlayerDto(player.ConnectionId, player.Name, player.IsHost))
+                .ToList();
+
+            await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
         }
 
         if (exception is not null)

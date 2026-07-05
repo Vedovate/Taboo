@@ -69,14 +69,43 @@ public class GameManager : IGameManager
                 gameRoom.Players.Add(new Player
                 {
                     ConnectionId = connectionId,
-                    Name = userName
+                    Name = connectionId
                 });
-                _logger.LogInformation("Jogador {UserName} ({ConnectionId}) entrou na sala {RoomCode}", userName, connectionId, roomCode);
+                _logger.LogInformation("Jogador {ConnectionId} entrou na sala {RoomCode}", connectionId, roomCode);
                 return;
             }
 
-            player.Name = userName;
-            _logger.LogInformation("Jogador {UserName} ({ConnectionId}) reconectou na sala {RoomCode}", userName, connectionId, roomCode);
+            player.Name = connectionId;
+            _logger.LogInformation("Jogador {ConnectionId} reconectou na sala {RoomCode}", connectionId, roomCode);
+        }
+    }
+
+    public string? RenamePlayer(string roomCode, string connectionId, string newName)
+    {
+        if (!GameRooms.TryGetValue(roomCode, out var gameRoom))
+        {
+            _logger.LogWarning("Tentativa de renomear jogador em sala inexistente {RoomCode}", roomCode);
+            return null;
+        }
+
+        lock (gameRoom)
+        {
+            var player = gameRoom.Players.FirstOrDefault(item => item.ConnectionId == connectionId);
+            if (player is null)
+            {
+                _logger.LogWarning("Jogador {ConnectionId} não encontrado na sala {RoomCode}", connectionId, roomCode);
+                return null;
+            }
+
+            if (gameRoom.Players.Any(p => p.ConnectionId != connectionId && p.Name == newName))
+            {
+                _logger.LogWarning("Nome {NewName} já está em uso na sala {RoomCode}", newName, roomCode);
+                return null;
+            }
+
+            player.Name = newName;
+            _logger.LogInformation("Jogador {ConnectionId} renomeado para {NewName} na sala {RoomCode}", connectionId, newName, roomCode);
+            return newName;
         }
     }
 
@@ -138,6 +167,11 @@ public class GameManager : IGameManager
         {
             return gameRoom.Players.FirstOrDefault(item => item.ConnectionId == connectionId)?.Name;
         }
+    }
+
+    public GameRoom? GetRoom(string roomCode)
+    {
+        return GameRooms.TryGetValue(roomCode, out var gameRoom) ? gameRoom : null;
     }
 
     public string? GetRoomCodeByConnectionId(string connectionId)

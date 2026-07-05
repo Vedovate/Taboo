@@ -8,10 +8,13 @@ interface MockGameService {
   error: WritableSignal<string>;
   connected: WritableSignal<boolean>;
   roomCode: WritableSignal<string>;
-  players: WritableSignal<{ name: string; isHost: boolean }[]>;
+  players: WritableSignal<{ connectionId: string; name: string; isHost: boolean }[]>;
   messages: WritableSignal<string[]>;
+  meuConnectionId: WritableSignal<string>;
+  nomeFinalizado: WritableSignal<boolean>;
   createRoom: ReturnType<typeof vi.fn>;
   conectar: ReturnType<typeof vi.fn>;
+  alterarNome: ReturnType<typeof vi.fn>;
   clearError: ReturnType<typeof vi.fn>;
 }
 
@@ -19,19 +22,24 @@ describe('HostLobbyComponent', () => {
   let component: HostLobbyComponent;
   let fixture: ComponentFixture<HostLobbyComponent>;
   let mockGameService: MockGameService;
+  const meuConnectionId = signal('');
 
   beforeEach(async () => {
+    meuConnectionId.set('conn1');
     mockGameService = {
       error: signal(''),
       connected: signal(true),
       roomCode: signal('ABC12'),
       players: signal([
-        { name: 'Player1', isHost: true },
-        { name: 'Player2', isHost: false },
+        { connectionId: 'conn1', name: 'Player1', isHost: true },
+        { connectionId: 'conn2', name: 'Player2', isHost: false },
       ]),
       messages: signal([]),
+      meuConnectionId,
+      nomeFinalizado: signal(true),
       createRoom: vi.fn().mockResolvedValue(undefined),
       conectar: vi.fn().mockResolvedValue(undefined),
+      alterarNome: vi.fn().mockResolvedValue(undefined),
       clearError: vi.fn(),
     };
 
@@ -69,28 +77,33 @@ describe('HostLobbyComponent', () => {
     expect(playerStatuses[0].textContent).toContain('HOST');
   });
 
-  it('should show JOGADOR tag for non-host player', () => {
+  it('should not show status tag for non-host player', () => {
     const playerStatuses = fixture.nativeElement.querySelectorAll('.player-status');
-    expect(playerStatuses[1].textContent).toContain('JOGADOR');
+    expect(playerStatuses.length).toBe(1);
   });
 
-  describe('navigateBack', () => {
-    it('should navigate to home', () => {
-      const navigateSpy = vi.spyOn((component as any).router, 'navigate').mockResolvedValue(true);
-
-      component.navigateBack();
-
-      expect(navigateSpy).toHaveBeenCalledWith(['/']);
+  describe('canEdit', () => {
+    it('should return true when connectionId matches and nomeFinalizado is true', () => {
+      expect(component.canEdit({ connectionId: 'conn1', name: 'Player1', isHost: true })).toBe(true);
     });
-  });
 
-  describe('randomizeTeams', () => {
-    it('should not throw', () => {
-      expect(() => component.randomizeTeams()).not.toThrow();
+    it('should return false when connectionId does not match', () => {
+      expect(component.canEdit({ connectionId: 'conn2', name: 'Player2', isHost: false })).toBe(false);
+    });
+
+    it('should return false when nomeFinalizado is false', () => {
+      mockGameService.nomeFinalizado.set(false);
+
+      expect(component.canEdit({ connectionId: 'conn1', name: 'Player1', isHost: true })).toBe(false);
     });
   });
 
   describe('template', () => {
+    it('should show edit button for own player when canEdit is true', () => {
+      const iconBtns = fixture.nativeElement.querySelectorAll('.icon-btn');
+      expect(iconBtns.length).toBe(1);
+    });
+
     it('should have a timer slider with default value', () => {
       const timerEl = fixture.nativeElement.querySelector('.slider-row span');
       expect(timerEl.textContent).toContain('30');

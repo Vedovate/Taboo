@@ -30,8 +30,12 @@
       <h1>{{ 'HOME.WELCOME_TITLE' | translate }}</h1>
     </div>
 
-    @if (gameService.error()) {
-      <p class="error-message">{{ gameService.error() }}</p>
+    @if (gameService.error(); as msg) {
+      <app-error-message
+        [messageKey]="msg"
+        [timeLeft]="gameService.errorTimeLeft()"
+        (dismiss)="gameService.clearError()"
+      />
     }
 
     <div class="hero-grid">
@@ -64,6 +68,7 @@
             <input
               id="roomCode"
               type="text"
+              maxlength="5"
               [value]="roomCode()"
               (input)="onRoomCodeInput($event)"
               placeholder="{{ 'HOME.ROOM_CODE_PLACEHOLDER' | translate }}"

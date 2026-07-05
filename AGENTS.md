@@ -31,8 +31,8 @@ Caso qualquer teste falhe:
 4. Re-execute o comando de teste na pasta correspondente.
 5. Repita o ciclo até obter 100% de sucesso na suíte executada.
 
-## 4. Autorização de Commit
-Você possui autorização para rodar `git add` e `git commit` **apenas** quando o terminal confirmar que todos os testes passaram. Na mensagem de commit, inclua uma linha ao final atestando a integridade (ex: `[Testes: Aprovados em taboo-client e/ou Taboo.Api]`). 
+## 4. Proibição de Commit
+Você está **PROIBIDO** de executar `git add`, `git commit`, `git push` ou qualquer operação que escreva no histórico do Git sem autorização expressa e explícita do usuário. Aguarde instruções claras antes de qualquer commit. 
 
 ## 5. Convenções Obrigatórias
 

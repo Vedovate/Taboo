@@ -1,0 +1,7 @@
+<div class="error-message">
+  <strong class="error-text">{{ messageKey() | translate }}</strong>
+  @if (timeLeft() > 0) {
+    <span class="error-countdown">({{ timeLeft() }}s)</span>
+  }
+  <button class="error-close" (click)="dismiss.emit()" aria-label="Fechar">✕</button>
+</div>

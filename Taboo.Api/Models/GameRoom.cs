@@ -6,6 +6,8 @@ public class GameRoom
     public string HostSessionId { get; set; } = string.Empty; // Token do localStorage do Host
     public List<Player> Players { get; set; } = new();
     
+    public int MaxPlayers { get; set; } = 3;
+
     // Estado do jogo
     public int ScoreTeamBlue { get; set; }
     public int ScoreTeamRed { get; set; }

@@ -44,8 +44,10 @@
           <li class="player-row">
             <span class="player-slot">{{ index + 1 }}</span>
             <strong>{{ player.name }}</strong>
-            <span class="player-status" [class.ready]="true">{{ player.isHost ? 'HOST' : 'JOGADOR' }}</span>
             @if (player.isHost) {
+              <span class="player-status">HOST</span>
+            }
+            @if (canEdit(player)) {
               <button class="icon-btn" aria-label="Editar Nome">⚙</button>
             }
           </li>
