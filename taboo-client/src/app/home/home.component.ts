@@ -22,9 +22,12 @@ export class HomeComponent {
   isHost = signal(false);
   hostName = signal('');
 
-  readonly languageFlag = computed(() =>
-    this.currentLanguage() === 'pt-BR' ? '🇧🇷' : '🇺🇸'
-  );
+  readonly languageFlag = computed(() => {
+    const svg = this.currentLanguage() === 'pt-BR'
+      ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 25"><rect width="36" height="25" fill="#009739"/><polygon points="18,3 30,12.5 18,22 6,12.5" fill="#FEDF00"/><circle cx="18" cy="12.5" r="5" fill="#002776"/></svg>'
+      : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 25"><rect width="36" height="25" fill="#B22234"/><rect y="1.92" width="36" height="1.92" fill="white"/><rect y="5.77" width="36" height="1.92" fill="white"/><rect y="9.62" width="36" height="1.92" fill="white"/><rect y="13.46" width="36" height="1.92" fill="white"/><rect y="17.31" width="36" height="1.92" fill="white"/><rect y="21.15" width="36" height="1.92" fill="white"/><rect width="15" height="13.46" fill="#3C3B6E"/></svg>';
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  });
 
   constructor(private translateService: TranslateService, private router: Router, public gameService: GameService) {
     void this.translateService.use(this.currentLanguage());

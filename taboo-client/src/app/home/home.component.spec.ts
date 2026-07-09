@@ -110,14 +110,16 @@ describe('HomeComponent', () => {
   });
 
   describe('languageFlag', () => {
-    it('should return Brazilian flag for pt-BR', () => {
+    it('should return Brazilian flag data URI for pt-BR', () => {
       component.currentLanguage.set('pt-BR');
-      expect(component.languageFlag()).toBe('🇧🇷');
+      expect(component.languageFlag()).toContain('data:image/svg+xml');
+      expect(component.languageFlag()).toContain('009739');
     });
 
-    it('should return US flag for en-US', () => {
+    it('should return US flag data URI for en-US', () => {
       component.currentLanguage.set('en-US');
-      expect(component.languageFlag()).toBe('🇺🇸');
+      expect(component.languageFlag()).toContain('data:image/svg+xml');
+      expect(component.languageFlag()).toContain('B22234');
     });
   });
 

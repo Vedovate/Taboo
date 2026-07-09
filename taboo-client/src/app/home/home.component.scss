@@ -91,6 +91,12 @@
   transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
+.flag-icon {
+  width: 1.5rem;
+  height: auto;
+  border-radius: 2px;
+}
+
 .language-toggle:hover,
 .language-toggle:focus-visible {
   transform: translateY(-1px);
