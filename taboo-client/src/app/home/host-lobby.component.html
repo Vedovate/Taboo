@@ -50,6 +50,11 @@
             @if (canEdit(player)) {
               <button class="icon-btn" aria-label="Editar Nome">⚙</button>
             }
+            @if (souHost() && !player.isHost) {
+              <button class="icon-btn icon-btn-danger" (click)="expulsarJogador(player.connectionId)" aria-label="Expulsar Jogador">
+                <svg lucideUserX class="icon" aria-hidden="true"></svg>
+              </button>
+            }
           </li>
         }
       </ul>

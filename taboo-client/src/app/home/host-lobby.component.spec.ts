@@ -15,6 +15,7 @@ interface MockGameService {
   createRoom: ReturnType<typeof vi.fn>;
   conectar: ReturnType<typeof vi.fn>;
   alterarNome: ReturnType<typeof vi.fn>;
+  expulsarJogador: ReturnType<typeof vi.fn>;
   clearError: ReturnType<typeof vi.fn>;
 }
 
@@ -40,6 +41,7 @@ describe('HostLobbyComponent', () => {
       createRoom: vi.fn().mockResolvedValue(undefined),
       conectar: vi.fn().mockResolvedValue(undefined),
       alterarNome: vi.fn().mockResolvedValue(undefined),
+      expulsarJogador: vi.fn().mockResolvedValue(undefined),
       clearError: vi.fn(),
     };
 
@@ -101,7 +103,30 @@ describe('HostLobbyComponent', () => {
   describe('template', () => {
     it('should show edit button for own player when canEdit is true', () => {
       const iconBtns = fixture.nativeElement.querySelectorAll('.icon-btn');
-      expect(iconBtns.length).toBe(1);
+      const editBtn = Array.from(iconBtns).find(
+        (btn: any) => btn.getAttribute('aria-label') === 'Editar Nome'
+      );
+      expect(editBtn).toBeTruthy();
+    });
+
+    it('should show kick button only for host on non-host players', () => {
+      const kickButtons = fixture.nativeElement.querySelectorAll('.icon-btn-danger');
+      expect(kickButtons.length).toBe(1);
+    });
+
+    it('should call expulsarJogador when kick button is clicked', () => {
+      const kickButton = fixture.nativeElement.querySelector('.icon-btn-danger');
+      kickButton.click();
+
+      expect(mockGameService.expulsarJogador).toHaveBeenCalledWith('conn2');
+    });
+
+    it('should not show kick button when current player is not host', () => {
+      mockGameService.meuConnectionId.set('conn2');
+      fixture.detectChanges();
+
+      const kickButtons = fixture.nativeElement.querySelectorAll('.icon-btn-danger');
+      expect(kickButtons.length).toBe(0);
     });
 
     it('should have a timer slider with default value', () => {

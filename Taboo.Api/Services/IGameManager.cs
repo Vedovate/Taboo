@@ -10,6 +10,8 @@ public interface IGameManager
 
     IReadOnlyList<Player> GetPlayersInRoom(string roomCode);
 
+    bool IsHost(string roomCode, string connectionId);
+
     void RemovePlayerFromRoom(string roomCode, string connectionId);
 
     bool IsPlayerInRoom(string roomCode, string connectionId);

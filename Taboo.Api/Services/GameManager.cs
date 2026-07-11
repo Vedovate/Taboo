@@ -151,6 +151,19 @@ public class GameManager : IGameManager
         }
     }
 
+    public bool IsHost(string roomCode, string connectionId)
+    {
+        if (!GameRooms.TryGetValue(roomCode, out var gameRoom))
+        {
+            return false;
+        }
+
+        lock (gameRoom)
+        {
+            return gameRoom.Players.Any(item => item.ConnectionId == connectionId && item.IsHost);
+        }
+    }
+
     public bool IsPlayerInRoom(string roomCode, string connectionId)
     {
         return GameRooms.TryGetValue(roomCode, out var gameRoom) && gameRoom.Players.Any(item => item.ConnectionId == connectionId);

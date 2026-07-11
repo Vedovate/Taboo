@@ -275,6 +275,45 @@ public class GameManagerTests
     }
 
     [Fact]
+    public void IsHost_HostPlayer_ReturnsTrue()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.IsHost("ABC12", "conn1");
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsHost_NonHostPlayer_ReturnsFalse()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+
+        var result = _sut.IsHost("ABC12", "conn2");
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsHost_NonExistentPlayer_ReturnsFalse()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.IsHost("ABC12", "nonExistentConn");
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsHost_NonExistentRoom_ReturnsFalse()
+    {
+        var result = _sut.IsHost("NONEXIST", "conn1");
+
+        Assert.False(result);
+    }
+
+    [Fact]
     public void AddPlayerToRoom_ConnectionIdIsName()
     {
         _sut.CreateRoom("ABC12", "conn1", "Player1");

@@ -12,6 +12,7 @@ public class GameHubTests
     private readonly Mock<IHubCallerClients> _mockClients;
     private readonly Mock<IClientProxy> _mockGroupProxy;
     private readonly Mock<ISingleClientProxy> _mockCallerProxy;
+    private readonly Mock<ISingleClientProxy> _mockTargetProxy;
     private readonly Mock<HubCallerContext> _mockContext;
     private readonly Mock<IGroupManager> _mockGroups;
 
@@ -21,19 +22,27 @@ public class GameHubTests
         _mockClients = new Mock<IHubCallerClients>();
         _mockGroupProxy = new Mock<IClientProxy>();
         _mockCallerProxy = new Mock<ISingleClientProxy>();
+        _mockTargetProxy = new Mock<ISingleClientProxy>();
         _mockContext = new Mock<HubCallerContext>();
         _mockGroups = new Mock<IGroupManager>();
 
         _mockContext.Setup(c => c.ConnectionId).Returns("conn1");
         _mockClients.Setup(c => c.Group(It.IsAny<string>())).Returns(_mockGroupProxy.Object);
         _mockClients.Setup(c => c.Caller).Returns(_mockCallerProxy.Object);
+        _mockClients.Setup(c => c.Client(It.IsAny<string>())).Returns(_mockTargetProxy.Object);
         _mockGroups
             .Setup(g => g.AddToGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default))
+            .Returns(Task.CompletedTask);
+        _mockGroups
+            .Setup(g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default))
             .Returns(Task.CompletedTask);
         _mockGroupProxy
             .Setup(p => p.SendCoreAsync(It.IsAny<string>(), It.IsAny<object?[]>(), default))
             .Returns(Task.CompletedTask);
         _mockCallerProxy
+            .Setup(p => p.SendCoreAsync(It.IsAny<string>(), It.IsAny<object?[]>(), default))
+            .Returns(Task.CompletedTask);
+        _mockTargetProxy
             .Setup(p => p.SendCoreAsync(It.IsAny<string>(), It.IsAny<object?[]>(), default))
             .Returns(Task.CompletedTask);
     }
@@ -286,6 +295,98 @@ public class GameHubTests
 
         _mockGroupProxy.Verify(
             p => p.SendCoreAsync(It.IsAny<string>(), It.IsAny<object?[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ExpulsarJogador_HostExpelsPlayer_RemovesFromGroupAndRoom()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Host");
+        _gameManager.AddPlayerToRoom("ABC12", "conn2", "conn2");
+        var hub = CreateHub();
+
+        await hub.ExpulsarJogador("ABC12", "conn2");
+
+        Assert.False(_gameManager.IsPlayerInRoom("ABC12", "conn2"));
+        _mockGroups.Verify(
+            g => g.RemoveFromGroupAsync("conn2", "ABC12", default),
+            Times.Once);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync("AtualizarJogadores", It.IsAny<object?[]>(), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ExpulsarJogador_NonHostCaller_DoesNothing()
+    {
+        _gameManager.CreateRoom("ABC12", "hostConn", "Host");
+        _gameManager.AddPlayerToRoom("ABC12", "conn1", "conn1");
+        _gameManager.AddPlayerToRoom("ABC12", "conn2", "conn2");
+        var hub = CreateHub();
+
+        await hub.ExpulsarJogador("ABC12", "conn2");
+
+        Assert.True(_gameManager.IsPlayerInRoom("ABC12", "conn2"));
+        _mockGroups.Verify(
+            g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ExpulsarJogador_ExpelledPlayerReceivesFoiExpulso()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Host");
+        _gameManager.AddPlayerToRoom("ABC12", "conn2", "Player2");
+        var hub = CreateHub();
+
+        await hub.ExpulsarJogador("ABC12", "conn2");
+
+        _mockClients.Verify(
+            c => c.Client("conn2"),
+            Times.Once);
+        _mockTargetProxy.Verify(
+            p => p.SendCoreAsync("FoiExpulso", It.IsAny<object?[]>(), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ExpulsarJogador_HostCannotExpelSelf()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Host");
+        var hub = CreateHub();
+
+        await hub.ExpulsarJogador("ABC12", "conn1");
+
+        Assert.True(_gameManager.IsPlayerInRoom("ABC12", "conn1"));
+        _mockGroups.Verify(
+            g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ExpulsarJogador_InvalidInput_DoesNothing()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Host");
+        var hub = CreateHub();
+
+        await hub.ExpulsarJogador("", "conn2");
+
+        Assert.True(_gameManager.IsPlayerInRoom("ABC12", "conn1"));
+        _mockGroups.Verify(
+            g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ExpulsarJogador_NonExistentTarget_DoesNothing()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Host");
+        var hub = CreateHub();
+
+        await hub.ExpulsarJogador("ABC12", "nonExistentConn");
+
+        _mockGroups.Verify(
+            g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default),
             Times.Never);
     }
 

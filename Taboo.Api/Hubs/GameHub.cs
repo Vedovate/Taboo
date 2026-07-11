@@ -128,6 +128,48 @@ public class GameHub : Hub
         _logger.LogInformation("Jogador {ConnectionId} renomeado para {Nome} na sala {Sala}", Context.ConnectionId, nome, sala);
     }
 
+    public async Task ExpulsarJogador(string codigoSala, string connectionIdAlvo)
+    {
+        var sala = codigoSala.Trim();
+        var alvo = connectionIdAlvo.Trim();
+
+        if (string.IsNullOrWhiteSpace(sala) || string.IsNullOrWhiteSpace(alvo))
+        {
+            _logger.LogWarning("ExpulsarJogador chamado com dados inválidos");
+            return;
+        }
+
+        if (!_gameManager.IsHost(sala, Context.ConnectionId))
+        {
+            _logger.LogWarning("ExpulsarJogador: chamador não é host na sala {Sala}", sala);
+            return;
+        }
+
+        if (!_gameManager.IsPlayerInRoom(sala, alvo))
+        {
+            _logger.LogWarning("ExpulsarJogador: alvo {Alvo} não está na sala {Sala}", alvo, sala);
+            return;
+        }
+
+        if (alvo == Context.ConnectionId)
+        {
+            _logger.LogWarning("ExpulsarJogador: host tentou expulsar a si mesmo na sala {Sala}", sala);
+            return;
+        }
+
+        await Groups.RemoveFromGroupAsync(alvo, sala);
+        _gameManager.RemovePlayerFromRoom(sala, alvo);
+
+        await Clients.Client(alvo).SendAsync("FoiExpulso");
+
+        var players = _gameManager.GetPlayersInRoom(sala)
+            .Select(player => new PlayerDto(player.ConnectionId, player.Name, player.IsHost))
+            .ToList();
+
+        await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
+        _logger.LogInformation("Jogador {Alvo} expulso da sala {Sala} pelo host", alvo, sala);
+    }
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);

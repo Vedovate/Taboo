@@ -1,10 +1,12 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { Router } from '@angular/router';
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import { environment } from '../../environments/environment';
 import { LobbyPlayer } from '../models/lobby-player';
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
+  constructor(private router: Router) {}
   private readonly hubUrl = environment.signalR.hubUrl;
   private hubConnection?: HubConnection;
   private currentRoomCode = '';
@@ -108,6 +110,13 @@ export class GameService {
       return;
     }
     await this.hubConnection.invoke('AlterarNome', this.currentRoomCode, novoNome);
+  }
+
+  async expulsarJogador(connectionIdAlvo: string): Promise<void> {
+    if (!this.hubConnection || !this.currentRoomCode) {
+      return;
+    }
+    await this.hubConnection.invoke('ExpulsarJogador', this.currentRoomCode, connectionIdAlvo);
   }
 
   async createRoom(codigoSala: string, nomeUsuario: string): Promise<void> {
@@ -219,6 +228,11 @@ export class GameService {
     this.hubConnection.on('SalaCheia', (message: string) => {
       this.isRoomFull.set(true);
       this.setError(message);
+    });
+
+    this.hubConnection.on('FoiExpulso', () => {
+      this.desconectar();
+      this.router.navigate(['/']);
     });
 
     this.hubConnection.onreconnecting(() => {
