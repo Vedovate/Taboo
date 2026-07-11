@@ -12,6 +12,9 @@
 .lobby-header {
   max-width: 1260px;
   margin: 0 auto 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .lobby-label {
@@ -19,14 +22,31 @@
   font-size: clamp(1.25rem, 1.5vw, 1.75rem);
   font-weight: 900;
   letter-spacing: 0.1rem;
-}
-
-.lobby-label span {
-  color: rgba(255, 255, 255, 0.72);
+  flex: 1;
 }
 
 .lobby-label strong {
   color: #00baff;
+}
+
+.room-code-area {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+}
+
+.room-code-text {
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #00baff;
+  min-width: 5ch;
+  text-align: center;
 }
 
 .lobby-grid {
@@ -146,6 +166,31 @@ input[type='number'] {
   flex-shrink: 0;
 }
 
+.nome-feedback {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  pointer-events: none;
+  animation: fadeIn 0.15s ease;
+}
+
+.nome-feedback.success {
+  background: #8af27e;
+  color: #121212;
+}
+
+.nome-feedback.error {
+  background: #dc2626;
+  color: #f5f5f5;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .player-row .icon-btn {
   flex-shrink: 0;
   margin-left: auto;
@@ -153,6 +198,22 @@ input[type='number'] {
 
 .player-slot {
   color: rgba(245, 245, 245, 0.6);
+}
+
+.name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(0, 186, 255, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f5f5f5;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.name-input:focus {
+  border-color: #00baff;
 }
 
 .player-status {
@@ -186,6 +247,26 @@ input[type='number'] {
 
 .icon-btn-danger:hover {
   background: rgba(255, 69, 0, 0.35);
+}
+
+.copy-btn-wrapper {
+  position: relative;
+}
+
+.copy-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  background: #00baff;
+  color: #121212;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .team-card {
@@ -247,6 +328,107 @@ input[type='number'] {
 
 .full-width {
   width: 100%;
+}
+
+.team-card {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.team-card:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.randomize-btn {
+  align-self: center;
+  flex-shrink: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f5f5;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.randomize-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.team-player-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.team-player-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.85rem;
+}
+
+.team-player-list .icon {
+  width: 1rem;
+  height: 1rem;
+  color: #8af27e;
+  flex-shrink: 0;
+}
+
+.ready-area {
+  position: relative;
+}
+
+.ready-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 1rem 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: #f5f5f5;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.ready-btn.is-ready {
+  border-color: #8af27e;
+  background: rgba(138, 242, 126, 0.12);
+  color: #8af27e;
+}
+
+.ready-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.start-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.65rem;
+  background: #00baff;
+  color: #121212;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 10;
+  animation: fadeIn 0.15s ease;
 }
 
 @media (max-width: 1100px) {

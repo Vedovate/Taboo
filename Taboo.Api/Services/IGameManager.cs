@@ -25,4 +25,12 @@ public interface IGameManager
     string? GetRoomCodeByConnectionId(string connectionId);
 
     string? RenamePlayer(string roomCode, string connectionId, string newName);
+
+    bool EscolherTime(string roomCode, string connectionId, string cor);
+
+    bool AlternarPronto(string roomCode, string connectionId);
+
+    string? RandomizarTime(string roomCode, string connectionId);
+
+    bool ForcarIniciar(string roomCode, string connectionId);
 }

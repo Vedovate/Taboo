@@ -105,11 +105,11 @@ export class GameService {
     }
   }
 
-  async alterarNome(novoNome: string): Promise<void> {
+  async alterarNome(novoNome: string): Promise<boolean> {
     if (!this.hubConnection || !this.currentRoomCode) {
-      return;
+      return false;
     }
-    await this.hubConnection.invoke('AlterarNome', this.currentRoomCode, novoNome);
+    return await this.hubConnection.invoke<boolean>('AlterarNome', this.currentRoomCode, novoNome);
   }
 
   async expulsarJogador(connectionIdAlvo: string): Promise<void> {
@@ -117,6 +117,41 @@ export class GameService {
       return;
     }
     await this.hubConnection.invoke('ExpulsarJogador', this.currentRoomCode, connectionIdAlvo);
+  }
+
+  async sairDaSala(): Promise<boolean> {
+    if (!this.hubConnection || !this.currentRoomCode) {
+      return false;
+    }
+    return await this.hubConnection.invoke<boolean>('SairDaSala', this.currentRoomCode);
+  }
+
+  async escolherTime(cor: string): Promise<boolean> {
+    if (!this.hubConnection) {
+      return false;
+    }
+    return await this.hubConnection.invoke<boolean>('EscolherTime', cor);
+  }
+
+  async alternarPronto(): Promise<boolean> {
+    if (!this.hubConnection) {
+      return false;
+    }
+    return await this.hubConnection.invoke<boolean>('AlternarPronto');
+  }
+
+  async randomizarTime(): Promise<string | null> {
+    if (!this.hubConnection) {
+      return null;
+    }
+    return await this.hubConnection.invoke<string | null>('RandomizarTime');
+  }
+
+  async forcarIniciar(): Promise<boolean> {
+    if (!this.hubConnection) {
+      return false;
+    }
+    return await this.hubConnection.invoke<boolean>('ForcarIniciar');
   }
 
   async createRoom(codigoSala: string, nomeUsuario: string): Promise<void> {
@@ -230,8 +265,9 @@ export class GameService {
       this.setError(message);
     });
 
-    this.hubConnection.on('FoiExpulso', () => {
-      this.desconectar();
+    this.hubConnection.on('FoiExpulso', async () => {
+      await this.desconectar();
+      this.setError('GAME.FOI_EXPULSO');
       this.router.navigate(['/']);
     });
 

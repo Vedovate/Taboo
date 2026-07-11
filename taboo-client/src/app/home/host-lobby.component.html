@@ -1,9 +1,27 @@
 <section class="lobby-shell">
   <header class="lobby-header">
-    <div>
-      <p class="lobby-label">LOBBY DA PARTIDA - SALA <span>[{{ gameService.roomCode() }}]</span></p>
+    <p class="lobby-label">{{ 'GAME.LOBBY_TITLE' | translate }}</p>
+
+    <div class="room-code-area">
+      <span class="room-code-text">{{ showCode() ? gameService.roomCode() : '•••••' }}</span>
+      <button class="icon-btn" (click)="toggleCodeVisibility()" aria-label="Mostrar ou esconder código">
+        @if (showCode()) {
+          <svg lucideEyeOff class="icon" aria-hidden="true"></svg>
+        } @else {
+          <svg lucideEye class="icon" aria-hidden="true"></svg>
+        }
+      </button>
+      <span class="copy-btn-wrapper">
+        <button class="icon-btn" (click)="copiarCodigo()" aria-label="Copiar código">
+          <svg lucideCopy class="icon" aria-hidden="true"></svg>
+        </button>
+        @if (copiado()) {
+          <span class="copy-tooltip">{{ 'GAME.CODIGO_COPIADO' | translate }}</span>
+        }
+      </span>
     </div>
-    <button class="btn btn-secondary" (click)="navigateBack()">VOLTAR</button>
+
+    <button class="btn btn-secondary" (click)="navigateBack()">{{ 'GAME.VOLTAR' | translate }}</button>
   </header>
 
   <main class="lobby-grid">
@@ -36,24 +54,38 @@
 
     <section class="panel panel-players">
       <div class="panel-heading">
-        <h2>JOGADORES (1-8)</h2>
+        <h2>{{ 'GAME.JOGADORES_TITLE' | translate }} ({{ gameService.playerCount() }}-10)</h2>
       </div>
 
       <ul class="player-list">
         @for (player of gameService.players(); track $index; let index = $index) {
           <li class="player-row">
             <span class="player-slot">{{ index + 1 }}</span>
-            <strong>{{ player.name }}</strong>
-            @if (player.isHost) {
-              <span class="player-status">HOST</span>
-            }
-            @if (canEdit(player)) {
-              <button class="icon-btn" aria-label="Editar Nome">⚙</button>
-            }
-            @if (souHost() && !player.isHost) {
-              <button class="icon-btn icon-btn-danger" (click)="expulsarJogador(player.connectionId)" aria-label="Expulsar Jogador">
-                <svg lucideUserX class="icon" aria-hidden="true"></svg>
+            @if (editingPlayerId() === player.connectionId) {
+              <input #nomeInput class="name-input" [value]="editNomeValue()" (input)="editNomeValue.set($any($event.target).value)" (keyup.enter)="confirmarNome()" (keyup.escape)="cancelarNome()" maxlength="16" />
+              <button class="icon-btn" (click)="confirmarNome()" aria-label="Confirmar nome">
+                <svg lucideCheck class="icon" aria-hidden="true"></svg>
               </button>
+            } @else {
+              <strong>{{ player.name }}</strong>
+              @if (player.isHost) {
+                <span class="player-status">HOST</span>
+              }
+              @if (canEdit(player)) {
+                <button class="icon-btn" (click)="iniciarEdicao(player)" aria-label="Editar Nome">
+                  <svg lucidePencil class="icon" aria-hidden="true"></svg>
+                </button>
+              }
+              @if (souHost() && !player.isHost) {
+                <button class="icon-btn icon-btn-danger" (click)="expulsarJogador(player.connectionId)" aria-label="Expulsar Jogador">
+                  <svg lucideUserX class="icon" aria-hidden="true"></svg>
+                </button>
+              }
+            }
+            @if (nomeFeedback(); as fb) {
+              @if (player.connectionId === gameService.meuConnectionId()) {
+                <span class="nome-feedback" [class.success]="fb.success" [class.error]="!fb.success">{{ fb.key | translate }}</span>
+              }
             }
           </li>
         }
@@ -61,18 +93,63 @@
     </section>
 
     <section class="panel panel-teams">
-      <div class="team-card red-team">
-        <h3>#FF4500</h3>
-        <p>Times serão separados aqui.</p>
-      </div>
+        <div class="team-card red-team" (click)="entrarTime('Vermelho')">
+          <h3>{{ (estouNoTime('Vermelho') ? 'GAME.SAIR_TIME_VERMELHO' : 'GAME.ENTRAR_TIME_VERMELHO') | translate }}</h3>
+          @if (jogadoresDoTime('Vermelho'); as players) {
+            <ul class="team-player-list">
+              @for (p of players; track p.connectionId) {
+                <li>
+                  {{ p.name }}
+                  @if (p.isReady) {
+                    <svg lucideCheck class="icon ready-icon" aria-hidden="true"></svg>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </div>
 
-      <div class="team-card blue-team">
-        <h3>#00BAFF</h3>
-        <p>Times serão separados aqui.</p>
-      </div>
+        <button class="randomize-btn" (click)="randomizarTime()">
+          {{ 'GAME.SELECAO_ALEATORIA' | translate }}
+        </button>
 
-      <button class="btn btn-primary full-width" (click)="randomizeTeams()">SELEÇÃO ALEATÓRIA</button>
-      <p class="panel-note">Times de team-lock</p>
+        <div class="team-card blue-team" (click)="entrarTime('Azul')">
+          <h3>{{ (estouNoTime('Azul') ? 'GAME.SAIR_TIME_AZUL' : 'GAME.ENTRAR_TIME_AZUL') | translate }}</h3>
+          @if (jogadoresDoTime('Azul'); as players) {
+            <ul class="team-player-list">
+              @for (p of players; track p.connectionId) {
+                <li>
+                  {{ p.name }}
+                  @if (p.isReady) {
+                    <svg lucideCheck class="icon ready-icon" aria-hidden="true"></svg>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+      <div class="ready-area">
+        <button
+          class="ready-btn full-width"
+          [class.is-ready]="pronto() && !souHost()"
+          [disabled]="!souHost() && prontoDesabilitado"
+          (click)="togglePronto()"
+        >
+          @if (souHost()) {
+            <span>{{ 'GAME.FORCAR_INICIAR' | translate }}</span>
+          } @else {
+            @if (pronto()) {
+              <svg lucideCheck class="icon" aria-hidden="true"></svg>
+            }
+            <span>{{ 'GAME.PRONTO' | translate }}</span>
+          }
+        </button>
+
+        @if (forcarIniciarTooltip()) {
+          <span class="start-tooltip">{{ 'GAME.INICIANDO' | translate }}</span>
+        }
+      </div>
     </section>
   </main>
 </section>

@@ -20,5 +20,22 @@
     "ROOM_CODE_TEXT": "Room code",
     "ERROR_ENTER_CODE": "Enter a room code to join.",
     "ERROR_CREATE_ROOM_UNIQUE": "Could not create a unique room. Please try again."
+  },
+  "GAME": {
+    "FOI_EXPULSO": "You have been kicked from the room.",
+    "CODIGO_COPIADO": "Copied!",
+    "NOME_ALTERADO": "Name changed!",
+    "NOME_INVALIDO": "Invalid name or already taken",
+    "JOGADORES_TITLE": "PLAYERS",
+    "LOBBY_TITLE": "MATCH LOBBY",
+    "VOLTAR": "LEAVE",
+    "ENTRAR_TIME_VERMELHO": "Click to join the Red team",
+    "ENTRAR_TIME_AZUL": "Click to join the Blue team",
+    "SAIR_TIME_VERMELHO": "Click to leave the Red team",
+    "SAIR_TIME_AZUL": "Click to leave the Blue team",
+    "SELECAO_ALEATORIA": "RANDOMIZE",
+    "PRONTO": "READY",
+    "FORCAR_INICIAR": "FORCE START",
+    "INICIANDO": "Starting now!"
   }
 }

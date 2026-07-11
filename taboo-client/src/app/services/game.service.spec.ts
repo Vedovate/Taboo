@@ -288,6 +288,72 @@ describe('GameService', () => {
 
       expect(service.connected()).toBe(false);
     });
+
+    it('should clear state and set error when FoiExpulso is received', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+      expect(service.connected()).toBe(true);
+      expect(service.roomCode()).toBe('ABC12');
+
+      signalrMock.triggerEvent('FoiExpulso');
+      await new Promise(resolve => setTimeout(resolve));
+
+      expect(service.connected()).toBe(false);
+      expect(service.roomCode()).toBe('');
+      expect(service.players()).toEqual([]);
+      expect(service.error()).toBe('GAME.FOI_EXPULSO');
+      expect(service.errorTimeLeft()).toBe(8);
+    });
+  });
+
+  describe('alterarNome', () => {
+    it('should return true when hub invoke returns true', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+      signalrMock.mockConnection.invoke.mockClear();
+
+      const result = await service.alterarNome('NovoNome');
+
+      expect(result).toBe(true);
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('AlterarNome', 'ABC12', 'NovoNome');
+    });
+
+    it('should return false when hub invoke returns false', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(false);
+      await service.createRoom('ABC12', 'Player1');
+      signalrMock.mockConnection.invoke.mockClear();
+
+      const result = await service.alterarNome('NovoNome');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when not connected', async () => {
+      const result = await service.alterarNome('NovoNome');
+
+      expect(result).toBe(false);
+      expect(signalrMock.mockConnection.invoke).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sairDaSala', () => {
+    it('should call SairDaSala hub method and return true', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+      signalrMock.mockConnection.invoke.mockClear();
+
+      const result = await service.sairDaSala();
+
+      expect(result).toBe(true);
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('SairDaSala', 'ABC12');
+    });
+
+    it('should return false when not connected', async () => {
+      const result = await service.sairDaSala();
+
+      expect(result).toBe(false);
+      expect(signalrMock.mockConnection.invoke).not.toHaveBeenCalled();
+    });
   });
 
   describe('clearError', () => {

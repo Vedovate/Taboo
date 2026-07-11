@@ -20,5 +20,22 @@
     "ROOM_CODE_TEXT": "Código da sala",
     "ERROR_ENTER_CODE": "Digite um código de sala para entrar.",
     "ERROR_CREATE_ROOM_UNIQUE": "Não foi possível criar uma sala única. Tente novamente."
+  },
+  "GAME": {
+    "FOI_EXPULSO": "Você foi expulso da sala.",
+    "CODIGO_COPIADO": "Copiado!",
+    "NOME_ALTERADO": "Nome alterado!",
+    "NOME_INVALIDO": "Nome inválido ou já em uso",
+    "JOGADORES_TITLE": "JOGADORES",
+    "LOBBY_TITLE": "LOBBY DA PARTIDA",
+    "VOLTAR": "VOLTAR",
+    "ENTRAR_TIME_VERMELHO": "Clique para entrar no time Vermelho",
+    "ENTRAR_TIME_AZUL": "Clique para entrar no time Azul",
+    "SAIR_TIME_VERMELHO": "Clique para sair do time Vermelho",
+    "SAIR_TIME_AZUL": "Clique para sair do time Azul",
+    "SELECAO_ALEATORIA": "SELEÇÃO ALEATÓRIA",
+    "PRONTO": "PRONTO",
+    "FORCAR_INICIAR": "FORÇAR INICIAR",
+    "INICIANDO": "Agora vai iniciar!"
   }
 }

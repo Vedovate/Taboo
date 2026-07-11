@@ -4,6 +4,7 @@ import { computed, signal, WritableSignal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { HomeComponent } from './home.component';
 import { GameService } from '../services/game.service';
+import { PlayerStorageService } from '../services/player-storage.service';
 import { TranslateService } from '../services/translate.service';
 
 interface MockGameService {
@@ -18,6 +19,11 @@ interface MockGameService {
   conectar: ReturnType<typeof vi.fn>;
   setError: ReturnType<typeof vi.fn>;
   clearError: ReturnType<typeof vi.fn>;
+}
+
+interface MockPlayerStorageService {
+  saveName: ReturnType<typeof vi.fn>;
+  loadName: ReturnType<typeof vi.fn>;
 }
 
 interface MockTranslateService {
@@ -35,6 +41,7 @@ describe('HomeComponent', () => {
   let fixture: ComponentFixture<HomeComponent>;
   let mockGameService: MockGameService;
   let mockTranslateService: MockTranslateService;
+  let mockPlayerStorage: MockPlayerStorageService;
 
   beforeEach(async () => {
     const playersSignal = signal<{ connectionId: string; name: string; isHost: boolean }[]>([]);
@@ -53,6 +60,11 @@ describe('HomeComponent', () => {
       clearError: vi.fn(),
     };
 
+    mockPlayerStorage = {
+      saveName: vi.fn(),
+      loadName: vi.fn(() => null),
+    };
+
     mockTranslateService = {
       language: signal('pt-BR'),
       translations: signal({}),
@@ -68,6 +80,7 @@ describe('HomeComponent', () => {
       providers: [
         provideRouter([]),
         { provide: GameService, useValue: mockGameService },
+        { provide: PlayerStorageService, useValue: mockPlayerStorage },
         { provide: TranslateService, useValue: mockTranslateService },
       ],
     }).compileComponents();
@@ -145,6 +158,27 @@ describe('HomeComponent', () => {
 
       expect(navigateSpy).not.toHaveBeenCalled();
     });
+
+    it('should use cached name when available', async () => {
+      mockPlayerStorage.loadName.mockReturnValue('CachedName');
+      mockGameService.connected.set(true);
+      mockGameService.error.set('');
+      vi.spyOn((component as any).router, 'navigate').mockResolvedValue(true);
+
+      await component.goToLobby();
+
+      expect(mockGameService.createRoom).toHaveBeenCalledWith(expect.any(String), 'CachedName');
+    });
+
+    it('should save name on successful room creation', async () => {
+      mockGameService.connected.set(true);
+      mockGameService.error.set('');
+      vi.spyOn((component as any).router, 'navigate').mockResolvedValue(true);
+
+      await component.goToLobby();
+
+      expect(mockPlayerStorage.saveName).toHaveBeenCalledWith('Jogador 1');
+    });
   });
 
   describe('joinExistingRoom', () => {
@@ -166,6 +200,28 @@ describe('HomeComponent', () => {
 
       expect(mockGameService.setError).toHaveBeenCalled();
       expect(mockGameService.conectar).not.toHaveBeenCalled();
+    });
+
+    it('should use cached name for joining when available', async () => {
+      mockPlayerStorage.loadName.mockReturnValue('CachedPlayer');
+      const navigateSpy = vi.spyOn((component as any).router, 'navigate').mockResolvedValue(true);
+      mockGameService.connected.set(true);
+      component.roomCode.set('ABC12');
+
+      await component.joinExistingRoom();
+
+      expect(mockGameService.conectar).toHaveBeenCalledWith('ABC12', 'CachedPlayer');
+      expect(navigateSpy).toHaveBeenCalledWith(['/lobby']);
+    });
+
+    it('should save name on successful join', async () => {
+      const navigateSpy = vi.spyOn((component as any).router, 'navigate').mockResolvedValue(true);
+      mockGameService.connected.set(true);
+      component.roomCode.set('ABC12');
+
+      await component.joinExistingRoom();
+
+      expect(mockPlayerStorage.saveName).toHaveBeenCalledWith('Jogador 1');
     });
   });
 

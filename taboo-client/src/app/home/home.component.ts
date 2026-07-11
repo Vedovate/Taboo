@@ -2,6 +2,7 @@ import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { LucideArrowRight, LucideHash, LucidePlus } from '@lucide/angular';
 import { GameService } from '../services/game.service';
+import { PlayerStorageService } from '../services/player-storage.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { TranslateService } from '../services/translate.service';
 import { LogoPlaceholderComponent } from './logo-placeholder/logo-placeholder.component';
@@ -29,7 +30,12 @@ export class HomeComponent {
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
   });
 
-  constructor(private translateService: TranslateService, private router: Router, public gameService: GameService) {
+  constructor(
+    private translateService: TranslateService,
+    private router: Router,
+    public gameService: GameService,
+    private playerStorage: PlayerStorageService,
+  ) {
     void this.translateService.use(this.currentLanguage());
   }
 
@@ -40,7 +46,8 @@ export class HomeComponent {
   }
 
   async goToLobby(): Promise<void> {
-    const baseName = this.currentLanguage() === 'pt-BR' ? 'Jogador 1' : 'Player 1';
+    const cached = this.playerStorage.loadName();
+    const baseName = cached ?? (this.currentLanguage() === 'pt-BR' ? 'Jogador 1' : 'Player 1');
     const maximumAttempts = 10;
 
     for (let attempt = 0; attempt < maximumAttempts; attempt += 1) {
@@ -48,6 +55,7 @@ export class HomeComponent {
       await this.gameService.createRoom(code, baseName);
 
       if (this.gameService.connected()) {
+        this.playerStorage.saveName(baseName);
         this.generatedRoomCode.set(code);
         this.isHost.set(true);
         this.hostName.set(baseName);
@@ -79,10 +87,12 @@ export class HomeComponent {
       return;
     }
 
-    const baseName = this.currentLanguage() === 'pt-BR' ? `Jogador ${this.gameService.playerCount() + 1}` : `Player ${this.gameService.playerCount() + 1}`;
+    const cached = this.playerStorage.loadName();
+    const baseName = cached ?? (this.currentLanguage() === 'pt-BR' ? `Jogador ${this.gameService.playerCount() + 1}` : `Player ${this.gameService.playerCount() + 1}`);
     await this.gameService.conectar(code, baseName);
 
     if (this.gameService.connected()) {
+      this.playerStorage.saveName(baseName);
       this.router.navigate(['/lobby']);
     }
   }

@@ -49,7 +49,7 @@ public class GameManagerTests
 
         var players = _sut.GetPlayersInRoom("ABC12");
         Assert.Equal(2, players.Count);
-        Assert.Contains(players, p => p.Name == "conn2" && p.ConnectionId == "conn2");
+        Assert.Contains(players, p => p.Name == "Player2" && p.ConnectionId == "conn2");
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class GameManagerTests
         var players = _sut.GetPlayersInRoom("ABC12");
         Assert.Equal(2, players.Count);
         var player = Assert.Single(players, p => p.ConnectionId == "conn2");
-        Assert.Equal("conn2", player.Name);
+        Assert.Equal("Player2Renamed", player.Name);
     }
 
     [Fact]
@@ -275,6 +275,50 @@ public class GameManagerTests
     }
 
     [Fact]
+    public void RenamePlayer_NameTooLong_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.RenamePlayer("ABC12", "conn1", "Nome muito longo aqui");
+
+        Assert.Null(result);
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.Equal("Player1", player.Name);
+    }
+
+    [Fact]
+    public void RenamePlayer_NameAfterSanitizeTooLong_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.RenamePlayer("ABC12", "conn1", "Nome\u0000Muito\u200BLongo\uFEFFAqui");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void RenamePlayer_ControlChars_RemovesControlChars()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.RenamePlayer("ABC12", "conn1", "Play\u0000\u0001er1");
+
+        Assert.Equal("Player1", result);
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.Equal("Player1", player.Name);
+    }
+
+    [Fact]
+    public void RenamePlayer_ZeroWidthChars_RemovesZeroWidth()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.RenamePlayer("ABC12", "conn1", "Play\u200B\u200Cer1");
+
+        Assert.Equal("Player1", result);
+    }
+
+    [Fact]
     public void IsHost_HostPlayer_ReturnsTrue()
     {
         _sut.CreateRoom("ABC12", "conn1", "Player1");
@@ -314,14 +358,49 @@ public class GameManagerTests
     }
 
     [Fact]
-    public void AddPlayerToRoom_ConnectionIdIsName()
+    public void AddPlayerToRoom_UsesUserName()
     {
         _sut.CreateRoom("ABC12", "conn1", "Player1");
         _sut.AddPlayerToRoom("ABC12", "conn2", "AnyName");
 
         var players = _sut.GetPlayersInRoom("ABC12");
         var player = Assert.Single(players, p => p.ConnectionId == "conn2");
-        Assert.Equal("conn2", player.Name);
+        Assert.Equal("AnyName", player.Name);
+    }
+
+    [Fact]
+    public void AddPlayerToRoom_DuplicateName_UsesFallback()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player1");
+
+        var players = _sut.GetPlayersInRoom("ABC12");
+        var player = Assert.Single(players, p => p.ConnectionId == "conn2");
+        Assert.Equal("Jogador 2", player.Name);
+    }
+
+    [Fact]
+    public void AddPlayerToRoom_DuplicateName_SkipsOccupiedFallback()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Jogador 2");
+        _sut.AddPlayerToRoom("ABC12", "conn3", "Jogador 2");
+
+        var players = _sut.GetPlayersInRoom("ABC12");
+        var player = Assert.Single(players, p => p.ConnectionId == "conn3");
+        Assert.Equal("Jogador 3", player.Name);
+    }
+
+    [Fact]
+    public void AddPlayerToRoom_ReconnectWithDuplicateName_UsesFallback()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player1");
+
+        var players = _sut.GetPlayersInRoom("ABC12");
+        var player = Assert.Single(players, p => p.ConnectionId == "conn2");
+        Assert.Equal("Jogador 3", player.Name);
     }
 
     [Fact]
@@ -371,15 +450,274 @@ public class GameManagerTests
     }
 
     [Fact]
+    public void RemovePlayerFromRoom_HostLeaves_TransfersHostToFirstPlayer()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+
+        _sut.RemovePlayerFromRoom("ABC12", "conn1");
+
+        var players = _sut.GetPlayersInRoom("ABC12");
+        Assert.Single(players);
+        Assert.True(players[0].IsHost);
+        Assert.Equal("conn2", players[0].ConnectionId);
+    }
+
+    [Fact]
+    public void RemovePlayerFromRoom_NonHostLeaves_DoesNotTransferHost()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+
+        _sut.RemovePlayerFromRoom("ABC12", "conn2");
+
+        var players = _sut.GetPlayersInRoom("ABC12");
+        Assert.Single(players);
+        Assert.True(players[0].IsHost);
+        Assert.Equal("conn1", players[0].ConnectionId);
+    }
+
+    [Fact]
+    public void RemovePlayerFromRoom_HostLeavesSinglePlayer_RemovesRoom()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        _sut.RemovePlayerFromRoom("ABC12", "conn1");
+
+        Assert.False(_sut.RoomExists("ABC12"));
+    }
+
+    [Fact]
     public void RemovePlayerFromRoom_ExistingPlayer_DoesNotRemoveRoomIfPlayersRemain()
     {
         _sut.CreateRoom("ABC12", "conn1", "Player1");
-        _sut.AddPlayerToRoom("ABC12", "conn2", "ignored");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
         _sut.RemovePlayerFromRoom("ABC12", "conn1");
 
         Assert.True(_sut.RoomExists("ABC12"));
         var players = _sut.GetPlayersInRoom("ABC12");
         Assert.Single(players);
         Assert.Equal("conn2", players[0].ConnectionId);
+    }
+
+    [Fact]
+    public void EscolherTime_JoinsTeam()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+
+        Assert.True(result);
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.Equal("Vermelho", player.Team);
+    }
+
+    [Fact]
+    public void EscolherTime_LeavesTeam_WhenClickingOwnTeam()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+
+        var result = _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+
+        Assert.True(result);
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.Equal("", player.Team);
+    }
+
+    [Fact]
+    public void EscolherTime_SwitchesTeam()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+
+        var result = _sut.EscolherTime("ABC12", "conn1", "Azul");
+
+        Assert.True(result);
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.Equal("Azul", player.Team);
+    }
+
+    [Fact]
+    public void EscolherTime_ReturnsFalse_WhenTeamFull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+        _sut.EscolherTime("ABC12", "conn2", "Vermelho");
+
+        var result = _sut.EscolherTime("ABC12", "conn2", "Azul");
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void EscolherTime_NonExistentRoom_ReturnsFalse()
+    {
+        var result = _sut.EscolherTime("NONEXIST", "conn1", "Vermelho");
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void EscolherTime_PlayerNotFound_ReturnsFalse()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.EscolherTime("ABC12", "nonExistent", "Vermelho");
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void AlternarPronto_ReturnsFalse_WhenNotInTeam()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.AlternarPronto("ABC12", "conn1");
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void AlternarPronto_TogglesOn()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+
+        var result = _sut.AlternarPronto("ABC12", "conn1");
+
+        Assert.True(result);
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.True(player.IsReady);
+    }
+
+    [Fact]
+    public void AlternarPronto_TogglesOff()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+        _sut.AlternarPronto("ABC12", "conn1");
+
+        var result = _sut.AlternarPronto("ABC12", "conn1");
+
+        Assert.False(result);
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.False(player.IsReady);
+    }
+
+    [Fact]
+    public void AlternarPronto_ResetsOnTeamLeave()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+        _sut.AlternarPronto("ABC12", "conn1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.Equal("", player.Team);
+        Assert.False(player.IsReady);
+    }
+
+    [Fact]
+    public void RandomizarTime_AssignsToATeam()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.RandomizarTime("ABC12", "conn1");
+
+        Assert.NotNull(result);
+        Assert.Contains(result, new[] { "Vermelho", "Azul" });
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.Equal(result, player.Team);
+    }
+
+    [Fact]
+    public void RandomizarTime_RespectsTeamCapacity()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+        _sut.EscolherTime("ABC12", "conn2", "Vermelho");
+        _sut.AddPlayerToRoom("ABC12", "conn3", "Player3");
+
+        var result = _sut.RandomizarTime("ABC12", "conn3");
+
+        Assert.Equal("Azul", result);
+        var player = _sut.GetPlayersInRoom("ABC12").First(p => p.ConnectionId == "conn3");
+        Assert.Equal("Azul", player.Team);
+    }
+
+    [Fact]
+    public void RandomizarTime_ResetsIsReady()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+        _sut.AlternarPronto("ABC12", "conn1");
+
+        _sut.RandomizarTime("ABC12", "conn1");
+
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.False(player.IsReady);
+    }
+
+    [Fact]
+    public void RandomizarTime_NonExistentRoom_ReturnsNull()
+    {
+        var result = _sut.RandomizarTime("NONEXIST", "conn1");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ForcarIniciar_AutoAssignsHost_WhenHostNotInTeam()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.ForcarIniciar("ABC12", "conn1");
+
+        Assert.True(result);
+        var player = _sut.GetPlayersInRoom("ABC12").First();
+        Assert.NotEmpty(player.Team);
+        var room = _sut.GetRoom("ABC12");
+        Assert.True(room!.IsActive);
+    }
+
+    [Fact]
+    public void ForcarIniciar_ReturnsFalse_WhenNonHost()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+
+        var result = _sut.ForcarIniciar("ABC12", "conn2");
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void ForcarIniciar_Success_HostInTeam()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+
+        var result = _sut.ForcarIniciar("ABC12", "conn1");
+
+        Assert.True(result);
+        var room = _sut.GetRoom("ABC12");
+        Assert.True(room!.IsActive);
+    }
+
+    [Fact]
+    public void ForcarIniciar_AssignsUnassignedPlayers()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+        _sut.AddPlayerToRoom("ABC12", "conn3", "Player3");
+
+        _sut.ForcarIniciar("ABC12", "conn1");
+
+        var players = _sut.GetPlayersInRoom("ABC12");
+        Assert.All(players, p => Assert.NotEmpty(p.Team));
     }
 }

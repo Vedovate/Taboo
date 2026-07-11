@@ -210,13 +210,14 @@ public class GameHubTests
     }
 
     [Fact]
-    public async Task AlterarNome_ValidInput_BroadcastsUpdatedPlayers()
+    public async Task AlterarNome_ValidInput_ReturnsTrueAndBroadcasts()
     {
         _gameManager.CreateRoom("ABC12", "conn1", "Player1");
         var hub = CreateHub();
 
-        await hub.AlterarNome("ABC12", "NovoNome");
+        var result = await hub.AlterarNome("ABC12", "NovoNome");
 
+        Assert.True(result);
         _mockGroupProxy.Verify(
             p => p.SendCoreAsync("AtualizarJogadores", It.IsAny<object?[]>(), default),
             Times.Once);
@@ -226,20 +227,21 @@ public class GameHubTests
     }
 
     [Fact]
-    public async Task AlterarNome_EmptyInput_DoesNothing()
+    public async Task AlterarNome_EmptyInput_ReturnsFalse()
     {
         _gameManager.CreateRoom("ABC12", "conn1", "Player1");
         var hub = CreateHub();
 
-        await hub.AlterarNome("ABC12", "");
+        var result = await hub.AlterarNome("ABC12", "");
 
+        Assert.False(result);
         _mockGroupProxy.Verify(
             p => p.SendCoreAsync(It.IsAny<string>(), It.IsAny<object?[]>(), default),
             Times.Never);
     }
 
     [Fact]
-    public async Task AlterarNome_DuplicateName_DoesNotRename()
+    public async Task AlterarNome_DuplicateName_ReturnsFalse()
     {
         _gameManager.CreateRoom("ABC12", "conn1", "Player1");
         _gameManager.AddPlayerToRoom("ABC12", "conn2", "ignored");
@@ -249,11 +251,52 @@ public class GameHubTests
         _mockContext.Setup(c => c.ConnectionId).Returns("conn2");
         var hub = CreateHub();
 
-        await hub.AlterarNome("ABC12", "Player1");
+        var result = await hub.AlterarNome("ABC12", "Player1");
 
+        Assert.False(result);
         var players = _gameManager.GetPlayersInRoom("ABC12");
         var player = Assert.Single(players, p => p.ConnectionId == "conn2");
         Assert.Equal("Player2", player.Name);
+    }
+
+    [Fact]
+    public async Task AlterarNome_NameTooLong_ReturnsFalse()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        var hub = CreateHub();
+
+        var result = await hub.AlterarNome("ABC12", "Nome muito longo aqui");
+
+        Assert.False(result);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync(It.IsAny<string>(), It.IsAny<object?[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task AlterarNome_ControlChars_RemovesAndBroadcasts()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        var hub = CreateHub();
+
+        var result = await hub.AlterarNome("ABC12", "Play\u0000er1");
+
+        Assert.True(result);
+        var player = _gameManager.GetPlayersInRoom("ABC12").First();
+        Assert.Equal("Player1", player.Name);
+    }
+
+    [Fact]
+    public async Task AlterarNome_ZeroWidthChars_RemovesAndBroadcasts()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        var hub = CreateHub();
+
+        var result = await hub.AlterarNome("ABC12", "Play\u200Ber1");
+
+        Assert.True(result);
+        var player = _gameManager.GetPlayersInRoom("ABC12").First();
+        Assert.Equal("Player1", player.Name);
     }
 
     [Fact]
@@ -391,6 +434,64 @@ public class GameHubTests
     }
 
     [Fact]
+    public async Task SairDaSala_PlayerInRoom_RemovesFromRoomAndBroadcasts()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        _gameManager.AddPlayerToRoom("ABC12", "conn2", "Player2");
+        var hub = CreateHub();
+
+        var result = await hub.SairDaSala("ABC12");
+
+        Assert.True(result);
+        Assert.False(_gameManager.IsPlayerInRoom("ABC12", "conn1"));
+        _mockGroups.Verify(
+            g => g.RemoveFromGroupAsync("conn1", "ABC12", default),
+            Times.Once);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync("AtualizarJogadores", It.IsAny<object?[]>(), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SairDaSala_HostLeaves_TransfersHost()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        _gameManager.AddPlayerToRoom("ABC12", "conn2", "Player2");
+        var hub = CreateHub();
+
+        await hub.SairDaSala("ABC12");
+
+        var players = _gameManager.GetPlayersInRoom("ABC12");
+        Assert.Single(players);
+        Assert.True(players[0].IsHost);
+        Assert.Equal("conn2", players[0].ConnectionId);
+    }
+
+    [Fact]
+    public async Task SairDaSala_PlayerNotInRoom_ReturnsFalse()
+    {
+        _gameManager.CreateRoom("ABC12", "hostConn", "Player1");
+        var hub = CreateHub();
+
+        var result = await hub.SairDaSala("ABC12");
+
+        Assert.False(result);
+        _mockGroups.Verify(
+            g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SairDaSala_InvalidCode_ReturnsFalse()
+    {
+        var hub = CreateHub();
+
+        var result = await hub.SairDaSala("");
+
+        Assert.False(result);
+    }
+
+    [Fact]
     public async Task OnDisconnectedAsync_PlayerInRoom_RemovesFromRoomAndBroadcasts()
     {
         _gameManager.CreateRoom("ABC12", "conn1", "Player1");
@@ -429,5 +530,131 @@ public class GameHubTests
         _mockGroups.Verify(
             g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task EscolherTime_ValidInput_JoinsTeamAndBroadcasts()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        var hub = CreateHub();
+
+        var result = await hub.EscolherTime("Vermelho");
+
+        Assert.True(result);
+        var player = _gameManager.GetPlayersInRoom("ABC12").First();
+        Assert.Equal("Vermelho", player.Team);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync("AtualizarJogadores", It.IsAny<object?[]>(), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task EscolherTime_PlayerNotInRoom_ReturnsFalse()
+    {
+        var hub = CreateHub();
+
+        var result = await hub.EscolherTime("Vermelho");
+
+        Assert.False(result);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync(It.IsAny<string>(), It.IsAny<object?[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task AlternarPronto_PlayerInTeam_TogglesAndBroadcasts()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        _gameManager.EscolherTime("ABC12", "conn1", "Vermelho");
+        var hub = CreateHub();
+
+        var result = await hub.AlternarPronto();
+
+        Assert.True(result);
+        var player = _gameManager.GetPlayersInRoom("ABC12").First();
+        Assert.True(player.IsReady);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync("AtualizarJogadores", It.IsAny<object?[]>(), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task AlternarPronto_PlayerNotInRoom_ReturnsFalse()
+    {
+        var hub = CreateHub();
+
+        var result = await hub.AlternarPronto();
+
+        Assert.False(result);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync(It.IsAny<string>(), It.IsAny<object?[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RandomizarTime_AssignsPlayerAndBroadcasts()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        var hub = CreateHub();
+
+        var result = await hub.RandomizarTime();
+
+        Assert.NotNull(result);
+        Assert.Contains(result, new[] { "Vermelho", "Azul" });
+        var player = _gameManager.GetPlayersInRoom("ABC12").First();
+        Assert.Equal(result, player.Team);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync("AtualizarJogadores", It.IsAny<object?[]>(), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RandomizarTime_PlayerNotInRoom_ReturnsNull()
+    {
+        var hub = CreateHub();
+
+        var result = await hub.RandomizarTime();
+
+        Assert.Null(result);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync(It.IsAny<string>(), It.IsAny<object?[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ForcarIniciar_HostInTeam_ReturnsTrueAndBroadcasts()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        _gameManager.EscolherTime("ABC12", "conn1", "Vermelho");
+        var hub = CreateHub();
+
+        var result = await hub.ForcarIniciar();
+
+        Assert.True(result);
+        var room = _gameManager.GetRoom("ABC12");
+        Assert.NotNull(room);
+        Assert.True(room.IsActive);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync("AtualizarJogadores", It.IsAny<object?[]>(), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ForcarIniciar_HostNotInTeam_AutoAssignsAndBroadcasts()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        var hub = CreateHub();
+
+        var result = await hub.ForcarIniciar();
+
+        Assert.True(result);
+        var player = _gameManager.GetPlayersInRoom("ABC12").First();
+        Assert.NotEmpty(player.Team);
+        var room = _gameManager.GetRoom("ABC12");
+        Assert.NotNull(room);
+        Assert.True(room.IsActive);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync("AtualizarJogadores", It.IsAny<object?[]>(), default),
+            Times.Once);
     }
 }
