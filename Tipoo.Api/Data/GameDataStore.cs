@@ -76,4 +76,51 @@ public class GameDataStore : IGameDataStore
             _logger.LogError(ex, "Falha ao salvar configurações do host {HostSessionId}", hostSessionId);
         }
     }
+
+    public void CreateMatch(GameMatch match)
+    {
+        try
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            connection.Execute(
+                @"INSERT INTO Matches (MatchKey, RoomCode, HostSessionId, StartedAt, SettingsJson, StartedPlayers, WasStarted, Completed)
+                  VALUES (@MatchKey, @RoomCode, @HostSessionId, @StartedAt, @SettingsJson, @StartedPlayers, @WasStarted, @Completed)",
+                new
+                {
+                    match.MatchKey,
+                    match.RoomCode,
+                    match.HostSessionId,
+                    match.StartedAt,
+                    match.SettingsJson,
+                    match.StartedPlayers,
+                    match.WasStarted,
+                    match.Completed
+                });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Falha ao registrar início da partida {MatchKey}", match.MatchKey);
+        }
+    }
+
+    public GameMatch? GetMatch(string matchKey)
+    {
+        try
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            var match = connection.QueryFirstOrDefault<GameMatch>(
+                @"SELECT Id, MatchKey, RoomCode, HostSessionId, StartedAt, SettingsJson, StartedPlayers,
+                         WasStarted, Completed, EndedAt, FinishedPlayers, FinalScoreRed, FinalScoreBlue, WinnerTeam
+                  FROM Matches WHERE MatchKey = @MatchKey",
+                new { MatchKey = matchKey });
+            return match;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Falha ao carregar partida {MatchKey}", matchKey);
+            return null;
+        }
+    }
 }

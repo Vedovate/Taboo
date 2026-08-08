@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Tipoo.Api.Data;
 using Tipoo.Api.Models;
@@ -427,8 +428,40 @@ public partial class GameManager : IGameManager
             }
 
             gameRoom.IsActive = true;
+            RegistrarInicioDePartida(gameRoom);
             _logger.LogInformation("Partida iniciada na sala {RoomCode} pelo host {ConnectionId}", roomCode, connectionId);
             return true;
+        }
+    }
+
+    private void RegistrarInicioDePartida(GameRoom gameRoom)
+    {
+        if (gameRoom.MatchKey is not null)
+        {
+            return;
+        }
+
+        try
+        {
+            var startedAt = DateTime.UtcNow;
+            gameRoom.StartedAt = startedAt;
+            gameRoom.MatchKey = $"{gameRoom.RoomCode}-{startedAt:yyyyMMddTHHmmssfff}Z";
+
+            _dataStore.CreateMatch(new GameMatch
+            {
+                MatchKey = gameRoom.MatchKey,
+                RoomCode = gameRoom.RoomCode,
+                HostSessionId = gameRoom.HostSessionId,
+                StartedAt = startedAt,
+                SettingsJson = JsonSerializer.Serialize(gameRoom.Settings),
+                StartedPlayers = gameRoom.Players.Count,
+                WasStarted = true,
+                Completed = false
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Falha ao registrar início da partida na sala {RoomCode}", gameRoom.RoomCode);
         }
     }
 
@@ -491,7 +524,7 @@ public partial class GameManager : IGameManager
         normalized.PointsPerCorrect = Math.Clamp(settings.PointsPerCorrect, 0, GameSettings.MaxPoints);
         normalized.PointsPerError = Math.Clamp(settings.PointsPerError, 0, GameSettings.MaxPoints);
         normalized.PointsPerSkip = Math.Clamp(settings.PointsPerSkip, 0, GameSettings.MaxPoints);
-        normalized.PauseBetweenRoundsSeconds = Math.Clamp(settings.PauseBetweenRoundsSeconds, 0, GameSettings.MaxPauseBetweenRoundsSeconds);
+        normalized.PauseBetweenRoundsSeconds = Math.Clamp(settings.PauseBetweenRoundsSeconds, GameSettings.MinPauseBetweenRoundsSeconds, GameSettings.MaxPauseBetweenRoundsSeconds);
 
         if (settings.NumberOfRounds < GameSettings.MinNumberOfRounds
             || settings.NumberOfRounds > GameSettings.MaxNumberOfRounds
@@ -505,7 +538,7 @@ public partial class GameManager : IGameManager
             return false;
         }
 
-        if (settings.Difficulties.Count == 0 || settings.Categories.Count == 0 || settings.BuzzerSounds.Count == 0)
+        if (settings.Difficulties.Count == 0)
         {
             return false;
         }
@@ -521,7 +554,6 @@ public partial class GameManager : IGameManager
         }
 
         normalized.Difficulties = settings.Difficulties.Distinct().ToList();
-        normalized.Categories = settings.Categories.Distinct().ToList();
         normalized.BuzzerSounds = settings.BuzzerSounds.Distinct().ToList();
         return true;
     }

@@ -9,4 +9,8 @@ public interface IGameDataStore
     GameSettings? LoadHostSettings(string hostSessionId);
 
     void SaveHostSettings(string hostSessionId, GameSettings settings);
+
+    void CreateMatch(GameMatch match);
+
+    GameMatch? GetMatch(string matchKey);
 }

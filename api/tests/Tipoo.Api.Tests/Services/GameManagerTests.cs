@@ -726,6 +726,68 @@ public class GameManagerTests
         Assert.All(players, p => Assert.NotEmpty(p.Team));
     }
 
+    [Fact]
+    public void ForcarIniciar_CreatesMatchRecord()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+
+        _sut.ForcarIniciar("ABC12", "conn1");
+
+        var room = _sut.GetRoom("ABC12");
+        Assert.NotNull(room!.StartedAt);
+        Assert.NotNull(room.MatchKey);
+        Assert.StartsWith("ABC12-", room.MatchKey);
+
+        _dataStore.Verify(d => d.CreateMatch(It.Is<GameMatch>(m =>
+            m.RoomCode == "ABC12" &&
+            m.WasStarted &&
+            !m.Completed &&
+            m.StartedPlayers == 2 &&
+            m.MatchKey == room.MatchKey &&
+            !string.IsNullOrWhiteSpace(m.SettingsJson))), Times.Once);
+    }
+
+    [Fact]
+    public void ForcarIniciar_DoesNotCreateMatchAgain_OnSecondCall()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        _sut.ForcarIniciar("ABC12", "conn1");
+        _sut.ForcarIniciar("ABC12", "conn1");
+
+        _dataStore.Verify(d => d.CreateMatch(It.IsAny<GameMatch>()), Times.Once);
+    }
+
+    [Fact]
+    public void ForcarIniciar_NonHost_DoesNotCreateMatch()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+
+        _sut.ForcarIniciar("ABC12", "conn2");
+
+        _dataStore.Verify(d => d.CreateMatch(It.IsAny<GameMatch>()), Times.Never);
+    }
+
+    [Fact]
+    public void ForcarIniciar_NonExistentRoom_DoesNotCreateMatch()
+    {
+        _sut.ForcarIniciar("NONEXIST", "conn1");
+
+        _dataStore.Verify(d => d.CreateMatch(It.IsAny<GameMatch>()), Times.Never);
+    }
+
+    [Fact]
+    public void ForcarIniciar_WithoutHostSession_CreatesMatchWithEmptyHostSession()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        _sut.ForcarIniciar("ABC12", "conn1");
+
+        _dataStore.Verify(d => d.CreateMatch(It.Is<GameMatch>(m => m.HostSessionId == string.Empty)), Times.Once);
+    }
+
     private static GameSettings CriarSettingsValidas()
     {
         return new GameSettings
@@ -743,10 +805,9 @@ public class GameManagerTests
             PointsPerCorrect = 1,
             PointsPerError = 1,
             PointsPerSkip = 1,
-            Categories = new List<string> { "Objeto", "Tecnologia" },
             StartingTeam = "aleatorio",
             TiebreakMode = "rodada-extra",
-            PauseBetweenRoundsSeconds = 5
+            PauseBetweenRoundsSeconds = 30
         };
     }
 
@@ -806,19 +867,7 @@ public class GameManagerTests
     }
 
     [Fact]
-    public void ConfigurarPartida_EmptyCategories_ReturnsNull()
-    {
-        _sut.CreateRoom("ABC12", "conn1", "Player1");
-        var settings = CriarSettingsValidas();
-        settings.Categories = new List<string>();
-
-        var result = _sut.ConfigurarPartida("ABC12", "conn1", settings);
-
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public void ConfigurarPartida_EmptyBuzzerSounds_ReturnsNull()
+    public void ConfigurarPartida_EmptyBuzzerSounds_IsAllowed()
     {
         _sut.CreateRoom("ABC12", "conn1", "Player1");
         var settings = CriarSettingsValidas();
@@ -826,7 +875,8 @@ public class GameManagerTests
 
         var result = _sut.ConfigurarPartida("ABC12", "conn1", settings);
 
-        Assert.Null(result);
+        Assert.NotNull(result);
+        Assert.Empty(result!.BuzzerSounds);
     }
 
     [Fact]
@@ -934,6 +984,10 @@ public class GameManagerTests
         var result = _sut.ObterConfiguracoes("NONEXIST");
 
         Assert.NotNull(result);
-        Assert.Equal(60, result.RoundTimeSeconds);
+        Assert.Equal(180, result.RoundTimeSeconds);
+        Assert.Equal(6, result.NumberOfRounds);
+        Assert.Equal("aleatorio", result.StartingTeam);
+        Assert.Equal("empatado", result.TiebreakMode);
+        Assert.Equal(30, result.PauseBetweenRoundsSeconds);
     }
 }

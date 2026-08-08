@@ -51,6 +51,7 @@ Você está **PROIBIDO** de executar `git add`, `git commit`, `git push` ou qual
 - **Modelos**: Interfaces de domínio em `src/app/models/`, nunca inline em services
 - **Reatividade**: Estado local de componentes deve usar `signal()` (nunca campos plain). Derived state use `computed()`. Leiam signals diretamente (`signal()`), nunca via getters síncronos
 - **Pipe de tradução**: Usar `pure: true` com `effect()` e `ChangeDetectorRef.markForCheck()`, nunca `pure: false`
+- **Selects em Angular**: Não usar `[value]` no `<select>` (não seleciona o option corretamente com `@for`); ligar `[selected]` em cada `<option>` (ex.: `[selected]="draft().startingTeam === t"`)
 - **Código morto**: Remova arquivos não utilizados (ex.: `app.html` placeholder, `app.module.ts` vazio, componentes sem rota)
 
 ## 6. Estrutura do Projeto
@@ -59,3 +60,12 @@ Você está **PROIBIDO** de executar `git add`, `git commit`, `git push` ou qual
 - **Testes Backend**: `api/tests/Tipoo.Api.Tests/` - xUnit + Moq
 - **Testes Frontend**: `tipoo-client/src/**/*.spec.ts` - Vitest via Angular builder
 - **Solution**: `Tipoo.sln` - Inclui projetos principal e de testes
+- **Modal de configs da partida**: `tipoo-client/src/app/components/match-settings-modal/` (aberto pelo lobby via botão "Configurações da Partida"; Salvar chama `configurarPartida` — persistência no cache do host `GameHostSettings`; não-host abre read-only; ao salvar mostra feedback de sucesso/erro `SETTINGS.SALVO`/`SETTINGS.ERRO`). Regras: dificuldades ordenadas Fácil→Médio→Difícil e não podem ser desmarcadas por completo; `buzzerSounds` pode ficar vazio (jogadores usam buzina própria) com aviso `SETTINGS.BUZZER_WARNING`; sliders exibem `Selecionado: <valor>`; `categories` foi **removido das configurações** (front `GameSettings` e back `GameSettings.cs`) mas permanece nos dados de carta/banco (`Card.Category`, `CartasOpcoesDto`, `init.sql`). Padrões/limites (back `GameSettings.cs` + front `createDefaultGameSettings()`): round time padrão 180s/máx 600s; rounds padrão 6; pausa entre rodadas slider 15s–300s padrão 30s; desempate (`TiebreakMode`) padrão `empatado`. **Validação por campo** (front): limites numéricos enforced em código via `LIMITES` (`numberOfRounds` 2–20 par, `skipLimit` 0–10, `tipooLeadLimit` 10–999999, pontos 0–10); `maxlength` **não funciona** em `input[type=number]`; campos vazios/fora do limite não atualizam o draft, mostram erro `SETTINGS.ERRORS.*`, Salvar fica `[disabled]` com erro, e `onBlurNumero` restaura o último valor válido ao sair do campo.
+- **Tabela `Matches`** (`Database/init.sql`): registra partidas p/ estatística com chave = código da sala + data/hora de início. É criada **só ao iniciar** a partida (`GameManager.RegistrarInicioDePartida` chamado por `ForcarIniciar`, 1x por sala) e atualizada ao encerrar (UPDATE ainda não implementado — sem fluxo de fim de jogo)
+
+## 7. Atualização de Memória (comando obrigatório)
+Ao final de cada tarefa concluída (com testes aprovados), revise se houve aprendizados importantes sobre o sistema que valham ser registrados na memória (`AGENTS.md`). Siga estas regras:
+1. Atualize **somente** quando houver algo relevante e durável (arquitetura, convenções, fluxos, decisões de design, comandos não triviais, contratos entre backend/frontend).
+2. Mantenha o texto **resumido** (poucas linhas, tópicos curtos) para o arquivo não crescer descontroladamente.
+3. **Não é obrigatório** adicionar a cada tarefa — pule quando o trabalho for trivial ou repetitivo.
+4. Releia o `AGENTS.md` antes de editar para evitar duplicações; edite por substituição (ex.: agregue em seções existentes como convenções ou estrutura do projeto).

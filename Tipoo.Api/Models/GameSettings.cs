@@ -3,17 +3,18 @@ namespace Tipoo.Api.Models;
 public class GameSettings
 {
     public const int MinRoundTimeSeconds = 30;
-    public const int MaxRoundTimeSeconds = 300;
+    public const int MaxRoundTimeSeconds = 600;
     public const int MinNumberOfRounds = 2;
     public const int MaxNumberOfRounds = 20;
     public const int MinTipooLeadLimit = 10;
     public const int MaxExplanationTimeSeconds = 15;
     public const int MaxSkipLimit = 10;
     public const int MaxPoints = 10;
-    public const int MaxPauseBetweenRoundsSeconds = 30;
+    public const int MinPauseBetweenRoundsSeconds = 15;
+    public const int MaxPauseBetweenRoundsSeconds = 300;
 
-    public int RoundTimeSeconds { get; set; } = 60;
-    public int NumberOfRounds { get; set; } = 4;
+    public int RoundTimeSeconds { get; set; } = 180;
+    public int NumberOfRounds { get; set; } = 6;
     public int SkipLimit { get; set; } = 3;
     public bool SkipCostsPoints { get; set; }
     public int? TipooLeadLimit { get; set; }
@@ -25,10 +26,9 @@ public class GameSettings
     public int PointsPerCorrect { get; set; } = 1;
     public int PointsPerError { get; set; } = 1;
     public int PointsPerSkip { get; set; } = 1;
-    public List<string> Categories { get; set; } = new();
     public string StartingTeam { get; set; } = "aleatorio";
-    public string TiebreakMode { get; set; } = "rodada-extra";
-    public int PauseBetweenRoundsSeconds { get; set; } = 5;
+    public string TiebreakMode { get; set; } = "empatado";
+    public int PauseBetweenRoundsSeconds { get; set; } = 30;
 
     public GameSettings Clone()
     {
@@ -47,7 +47,6 @@ public class GameSettings
             PointsPerCorrect = PointsPerCorrect,
             PointsPerError = PointsPerError,
             PointsPerSkip = PointsPerSkip,
-            Categories = (Categories ?? new List<string>()).ToList(),
             StartingTeam = StartingTeam,
             TiebreakMode = TiebreakMode,
             PauseBetweenRoundsSeconds = PauseBetweenRoundsSeconds

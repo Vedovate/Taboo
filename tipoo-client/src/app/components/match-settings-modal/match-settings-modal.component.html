@@ -1,0 +1,331 @@
+<div class="modal-overlay" (click)="cancelar()">
+  <section class="modal-panel" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="{{ 'SETTINGS.TITLE' | translate }}">
+    <header class="modal-header">
+      <div class="modal-title-group">
+        <h2>{{ 'SETTINGS.TITLE' | translate }}</h2>
+        <p>{{ 'SETTINGS.HOST_ONLY' | translate }}</p>
+      </div>
+      <button class="icon-btn" (click)="cancelar()" aria-label="Fechar configurações">
+        <svg lucideX class="icon" aria-hidden="true"></svg>
+      </button>
+    </header>
+
+    <div class="modal-body">
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.NUMBER_OF_ROUNDS' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.NUMBER_OF_ROUNDS'"></app-tooltip>
+        </label>
+        <input
+          type="number"
+          min="2"
+          max="20"
+          [value]="draft().numberOfRounds"
+          [class.field-invalid]="erros()['numberOfRounds']"
+          [disabled]="!souHost()"
+          (input)="setNumberField('numberOfRounds', $event)"
+          (blur)="onBlurNumero('numberOfRounds', $event)"
+        />
+        @if (erros()['numberOfRounds']; as err) {
+          <p class="field-error">{{ err | translate }}</p>
+        }
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.TIPOO_LEAD_LIMIT' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.TIPOO_LEAD_LIMIT'"></app-tooltip>
+        </label>
+        <label class="inline-toggle">
+          <input
+            type="checkbox"
+            [checked]="tipooAtivo()"
+            [disabled]="!souHost()"
+            (change)="setTipooAtivo($event)"
+          />
+          <span>{{ 'SETTINGS.TIPOO_ENABLED' | translate }}</span>
+        </label>
+        @if (tipooAtivo()) {
+          <input
+            type="number"
+            min="10"
+            max="999999"
+            [value]="draft().tipooLeadLimit"
+            [class.field-invalid]="erros()['tipooLeadLimit']"
+            [disabled]="!souHost()"
+            (input)="setNumberField('tipooLeadLimit', $event)"
+            (blur)="onBlurNumero('tipooLeadLimit', $event)"
+          />
+          @if (erros()['tipooLeadLimit']; as err) {
+            <p class="field-error">{{ err | translate }}</p>
+          }
+        }
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.ROUND_TIME' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.ROUND_TIME'"></app-tooltip>
+        </label>
+        <div class="slider-row">
+          <span>{{ 'SETTINGS.SELECTED' | translate }} {{ formatDuration(draft().roundTimeSeconds) }}</span>
+        </div>
+        <input
+          type="range"
+          min="30"
+          max="600"
+          step="5"
+          [value]="draft().roundTimeSeconds"
+          [disabled]="!souHost()"
+          [style.--fill]="fillPercent(30, 600, draft().roundTimeSeconds)"
+          (input)="setNumberField('roundTimeSeconds', $event)"
+        />
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.SKIP_LIMIT' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.SKIP_LIMIT'"></app-tooltip>
+        </label>
+        <input
+          type="number"
+          min="0"
+          max="10"
+          [value]="draft().skipLimit"
+          [class.field-invalid]="erros()['skipLimit']"
+          [disabled]="!souHost()"
+          (input)="setNumberField('skipLimit', $event)"
+          (blur)="onBlurNumero('skipLimit', $event)"
+        />
+        @if (erros()['skipLimit']; as err) {
+          <p class="field-error">{{ err | translate }}</p>
+        }
+        <label class="inline-toggle">
+          <input
+            type="checkbox"
+            [checked]="draft().skipCostsPoints"
+            [disabled]="!souHost()"
+            (change)="setBooleanField('skipCostsPoints', $event)"
+          />
+          <span>{{ 'SETTINGS.SKIP_COSTS_POINTS' | translate }}</span>
+        </label>
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.EXPLANATION_TIME' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.EXPLANATION_TIME'"></app-tooltip>
+        </label>
+        <div class="slider-row">
+          <span>{{ 'SETTINGS.SELECTED' | translate }} {{ draft().explanationTimeSeconds }}s</span>
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="15"
+          [value]="draft().explanationTimeSeconds"
+          [disabled]="!souHost()"
+          [style.--fill]="fillPercent(0, 15, draft().explanationTimeSeconds)"
+          (input)="setNumberField('explanationTimeSeconds', $event)"
+        />
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.POINTS_CORRECT' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.POINTS_CORRECT'"></app-tooltip>
+        </label>
+        <input
+          type="number"
+          min="0"
+          max="10"
+          [value]="draft().pointsPerCorrect"
+          [class.field-invalid]="erros()['pointsPerCorrect']"
+          [disabled]="!souHost()"
+          (input)="setNumberField('pointsPerCorrect', $event)"
+          (blur)="onBlurNumero('pointsPerCorrect', $event)"
+        />
+        @if (erros()['pointsPerCorrect']; as err) {
+          <p class="field-error">{{ err | translate }}</p>
+        }
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.POINTS_ERROR' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.POINTS_ERROR'"></app-tooltip>
+        </label>
+        <input
+          type="number"
+          min="0"
+          max="10"
+          [value]="draft().pointsPerError"
+          [class.field-invalid]="erros()['pointsPerError']"
+          [disabled]="!souHost()"
+          (input)="setNumberField('pointsPerError', $event)"
+          (blur)="onBlurNumero('pointsPerError', $event)"
+        />
+        @if (erros()['pointsPerError']; as err) {
+          <p class="field-error">{{ err | translate }}</p>
+        }
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.POINTS_SKIP' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.POINTS_SKIP'"></app-tooltip>
+        </label>
+        <input
+          type="number"
+          min="0"
+          max="10"
+          [value]="draft().pointsPerSkip"
+          [class.field-invalid]="erros()['pointsPerSkip']"
+          [disabled]="!souHost()"
+          (input)="setNumberField('pointsPerSkip', $event)"
+          (blur)="onBlurNumero('pointsPerSkip', $event)"
+        />
+        @if (erros()['pointsPerSkip']; as err) {
+          <p class="field-error">{{ err | translate }}</p>
+        }
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.DIFFICULTIES' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.DIFFICULTIES'"></app-tooltip>
+        </label>
+        <div class="checkbox-row">
+          @for (d of opcoesDificuldades(); track d) {
+            <label class="checkbox-item">
+              <input
+                type="checkbox"
+                [checked]="inList('difficulties', d)"
+                [disabled]="!souHost() || isDificuldadeDesabilitada(d)"
+                (change)="toggleListField('difficulties', d, $event)"
+              />
+              <span>{{ d }}</span>
+            </label>
+          }
+        </div>
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.BUZZER_SOUNDS' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.BUZZER_SOUNDS'"></app-tooltip>
+        </label>
+        <div class="checkbox-row">
+          @for (b of buzzerSoundOptions; track b) {
+            <label class="checkbox-item">
+              <input
+                type="checkbox"
+                [checked]="inList('buzzerSounds', b)"
+                [disabled]="!souHost()"
+                (change)="toggleListField('buzzerSounds', b, $event)"
+              />
+              <span>{{ 'SETTINGS.BUZZER.' + b | translate }}</span>
+            </label>
+          }
+        </div>
+        @if (buzinasVazias()) {
+          <p class="config-warning">{{ 'SETTINGS.BUZZER_WARNING' | translate }}</p>
+        }
+        <label class="inline-toggle">
+          <input
+            type="checkbox"
+            [checked]="draft().randomBuzzerSound"
+            [disabled]="!souHost()"
+            (change)="setBooleanField('randomBuzzerSound', $event)"
+          />
+          <span>{{ 'SETTINGS.BUZZER_RANDOM' | translate }}</span>
+        </label>
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.STARTING_TEAM' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.STARTING_TEAM'"></app-tooltip>
+        </label>
+        <select
+          [disabled]="!souHost()"
+          (change)="setSelectField('startingTeam', $event)"
+        >
+          @for (t of startingTeamOptions; track t) {
+            <option [value]="t" [selected]="draft().startingTeam === t">{{ 'SETTINGS.TEAM.' + t | translate }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.TIEBREAK' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.TIEBREAK'"></app-tooltip>
+        </label>
+        <select
+          [disabled]="!souHost()"
+          (change)="setSelectField('tiebreakMode', $event)"
+        >
+          @for (t of tiebreakOptions; track t) {
+            <option [value]="t" [selected]="draft().tiebreakMode === t">{{ 'SETTINGS.TIEBREAK_MODE.' + t | translate }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="config-field">
+        <label class="config-label">
+          <span>{{ 'SETTINGS.PAUSE_BETWEEN_ROUNDS' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.PAUSE_BETWEEN_ROUNDS'"></app-tooltip>
+        </label>
+        <div class="slider-row">
+          <span>{{ 'SETTINGS.SELECTED' | translate }} {{ formatDuration(draft().pauseBetweenRoundsSeconds) }}</span>
+        </div>
+        <input
+          type="range"
+          min="15"
+          max="300"
+          step="5"
+          [value]="draft().pauseBetweenRoundsSeconds"
+          [disabled]="!souHost()"
+          [style.--fill]="fillPercent(15, 300, draft().pauseBetweenRoundsSeconds)"
+          (input)="setNumberField('pauseBetweenRoundsSeconds', $event)"
+        />
+      </div>
+
+      <div class="config-field">
+        <label class="inline-toggle">
+          <input
+            type="checkbox"
+            [checked]="draft().panicMode"
+            [disabled]="!souHost()"
+            (change)="setBooleanField('panicMode', $event)"
+          />
+          <span>{{ 'SETTINGS.PANIC_MODE' | translate }}</span>
+          <app-tooltip [tooltipKey]="'SETTINGS.TOOLTIP.PANIC_MODE'"></app-tooltip>
+        </label>
+      </div>
+
+      @if (!souHost()) {
+        <p class="panel-note">{{ 'SETTINGS.READ_ONLY' | translate }}</p>
+      }
+    </div>
+
+    <footer class="modal-footer">
+      @if (salvarFeedback(); as fb) {
+        <span class="salvar-feedback" [class.error]="fb === 'SETTINGS.ERRO'">{{ fb | translate }}</span>
+      }
+      @if (souHost()) {
+        <button class="btn btn-ghost" (click)="cancelar()" [disabled]="salvando()">{{ 'SETTINGS.CANCEL' | translate }}</button>
+        <button class="btn btn-primary" (click)="salvar()" [disabled]="salvando() || haErros()">
+          @if (salvando()) {
+            <span>{{ 'SETTINGS.SAVING' | translate }}</span>
+          } @else {
+            <span>{{ 'SETTINGS.SAVE' | translate }}</span>
+          }
+        </button>
+      } @else {
+        <button class="btn btn-primary" (click)="cancelar()">{{ 'SETTINGS.CLOSE' | translate }}</button>
+      }
+    </footer>
+  </section>
+</div>

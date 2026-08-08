@@ -17,4 +17,9 @@ public class GameRoom
     public string CurrentSpokespersonId { get; set; } = string.Empty; // Quem está dando as dicas
     public bool IsActive { get; set; }
     public int TimeRemaining { get; set; } = 60;
+
+    // Registro da partida no banco (criado ao iniciar)
+    public DateTime? StartedAt { get; set; }
+    public string? MatchKey { get; set; } // Código da sala + data/hora de início
+
 }

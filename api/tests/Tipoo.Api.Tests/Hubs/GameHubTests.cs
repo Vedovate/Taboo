@@ -680,10 +680,9 @@ public class GameHubTests
             PointsPerCorrect = 1,
             PointsPerError = 1,
             PointsPerSkip = 1,
-            Categories = new List<string> { "Objeto", "Tecnologia" },
             StartingTeam = "aleatorio",
             TiebreakMode = "rodada-extra",
-            PauseBetweenRoundsSeconds = 5
+            PauseBetweenRoundsSeconds = 30
         };
     }
 
@@ -777,7 +776,7 @@ public class GameHubTests
         var result = hub.ObterConfiguracoes();
 
         Assert.NotNull(result);
-        Assert.Equal(60, result.RoundTimeSeconds);
+        Assert.Equal(180, result.RoundTimeSeconds);
     }
 
     [Fact]
@@ -788,7 +787,7 @@ public class GameHubTests
         var result = hub.ObterConfiguracoes();
 
         Assert.NotNull(result);
-        Assert.Equal(60, result.RoundTimeSeconds);
+        Assert.Equal(180, result.RoundTimeSeconds);
     }
 
     [Fact]

@@ -184,6 +184,41 @@ describe('HostLobbyComponent', () => {
     expect(playerStatuses.length).toBe(1);
   });
 
+  it('should not render settings panel in lobby grid', () => {
+    expect(fixture.nativeElement.querySelector('.panel-config')).toBeFalsy();
+  });
+
+  it('should render settings button after player list', () => {
+    const settingsBtn = fixture.nativeElement.querySelector('.settings-btn');
+    expect(settingsBtn).toBeTruthy();
+    expect(settingsBtn.textContent).toContain('SETTINGS.OPEN');
+    const playerList = fixture.nativeElement.querySelector('.player-list');
+    expect(playerList.compareDocumentPosition(settingsBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('should open settings modal when settings button is clicked', () => {
+    expect(component.mostrarModal()).toBe(false);
+    const settingsBtn = fixture.nativeElement.querySelector('.settings-btn');
+    settingsBtn.click();
+    fixture.detectChanges();
+
+    expect(component.mostrarModal()).toBe(true);
+    expect(fixture.nativeElement.querySelector('app-match-settings-modal')).toBeTruthy();
+  });
+
+  it('should close settings modal when fechar event fires', () => {
+    const settingsBtn = fixture.nativeElement.querySelector('.settings-btn');
+    settingsBtn.click();
+    fixture.detectChanges();
+
+    const modal = fixture.nativeElement.querySelector('app-match-settings-modal');
+    modal.dispatchEvent(new CustomEvent('fechar'));
+    fixture.detectChanges();
+
+    expect(component.mostrarModal()).toBe(false);
+    expect(fixture.nativeElement.querySelector('app-match-settings-modal')).toBeFalsy();
+  });
+
   describe('canEdit', () => {
     it('should return true when connectionId matches and nomeFinalizado is true', () => {
       expect(component.canEdit({ connectionId: 'conn1', name: 'Player1', isHost: true, team: '', isReady: false })).toBe(true);
@@ -222,216 +257,6 @@ describe('HostLobbyComponent', () => {
 
       const kickButtons = fixture.nativeElement.querySelectorAll('.icon-btn-danger');
       expect(kickButtons.length).toBe(0);
-    });
-
-    it('should render round time slider with value from settings', () => {
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      expect(slider).toBeTruthy();
-      expect(Number(slider.value)).toBe(60);
-      expect(slider.min).toBe('30');
-      expect(slider.max).toBe('300');
-    });
-
-    it('should render number of rounds input with default value', () => {
-      const roundInput = fixture.nativeElement.querySelector('.config-field input[type="number"]');
-      expect(roundInput).toBeTruthy();
-      expect(Number(roundInput.value)).toBe(4);
-    });
-
-    it('should render tooltip buttons for every settings field', () => {
-      const tooltips = fixture.nativeElement.querySelectorAll('app-tooltip .tooltip-btn');
-      expect(tooltips.length).toBeGreaterThan(5);
-    });
-
-    it('should render difficulty checkboxes from card options', () => {
-      const diffBoxes = fixture.nativeElement.querySelectorAll('.checkbox-item input[type="checkbox"]');
-      expect(diffBoxes.length).toBeGreaterThan(3);
-    });
-
-    it('should enable settings inputs for host', () => {
-      const inputs = fixture.nativeElement.querySelectorAll('.config-field input, .config-field select');
-      const disabled = Array.from(inputs as NodeListOf<HTMLInputElement | HTMLSelectElement>).filter(el => el.disabled);
-      expect(disabled.length).toBe(0);
-    });
-
-    it('should disable settings inputs for non-host', () => {
-      mockGameService.meuConnectionId.set('conn2');
-      fixture.detectChanges();
-
-      const inputs = fixture.nativeElement.querySelectorAll('.config-field input, .config-field select');
-      expect(inputs.length).toBeGreaterThan(0);
-      const fields = Array.from(inputs as NodeListOf<HTMLInputElement | HTMLSelectElement>);
-      const disabled = fields.filter(el => el.disabled);
-      expect(disabled.length).toBe(fields.length);
-    });
-
-    it('should not render save button and hide read-only note for host', () => {
-      expect(fixture.nativeElement.querySelector('.panel-config .btn-primary')).toBeFalsy();
-      expect(fixture.nativeElement.querySelector('.panel-config .panel-note')).toBeFalsy();
-    });
-
-    it('should show read-only note for non-host', () => {
-      mockGameService.meuConnectionId.set('conn2');
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('.panel-config .btn-primary')).toBeFalsy();
-      const note = fixture.nativeElement.querySelector('.panel-config .panel-note');
-      expect(note.textContent).toContain('SETTINGS.READ_ONLY');
-    });
-
-    it('should pre-fill draft from cached settings signal', () => {
-      mockGameService.settings.set({ ...createDefaultGameSettings(), roundTimeSeconds: 90 });
-      fixture.detectChanges();
-
-      expect(component.draft().roundTimeSeconds).toBe(90);
-    });
-
-    it('should compute fill percent for slider', () => {
-      expect(component.fillPercent(0, 120, 60)).toBe('50%');
-      expect(component.fillPercent(30, 120, 30)).toBe('0%');
-      expect(component.fillPercent(30, 120, 120)).toBe('100%');
-      expect(component.fillPercent(0, 15, 7.5)).toBe('50%');
-      expect(component.fillPercent(30, 120, 999)).toBe('100%');
-      expect(component.fillPercent(30, 120, 60)).toBe('33.33333333333333%');
-      expect(component.fillPercent(30, 300, 165)).toBe('50%');
-      expect(component.fillPercent(30, 300, 300)).toBe('100%');
-    });
-
-    it('should format duration with minutes conversion', () => {
-      expect(component.formatDuration(30)).toBe('30s');
-      expect(component.formatDuration(60)).toBe('1min');
-      expect(component.formatDuration(90)).toBe('1min 30s');
-      expect(component.formatDuration(300)).toBe('5min');
-    });
-
-    it('should render round time labels with minutes conversion', () => {
-      const labels = fixture.nativeElement.querySelectorAll('.slider-row span');
-      expect(labels[0].textContent).toContain('1min');
-      expect(labels[1].textContent).toContain('5min');
-    });
-
-    it('should bind --fill custom property on range slider', () => {
-      mockGameService.settings.set({ ...createDefaultGameSettings(), roundTimeSeconds: 165 });
-      fixture.detectChanges();
-
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      expect(slider.style.getPropertyValue('--fill')).toBe('50%');
-    });
-
-    it('should autosave when slider is released', async () => {
-      vi.useFakeTimers();
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      slider.dispatchEvent(new Event('change'));
-      await vi.advanceTimersByTimeAsync(400);
-
-      expect(mockGameService.configurarPartida).toHaveBeenCalledWith(component.draft());
-      vi.useRealTimers();
-    });
-
-    it('should debounce rapid autosave calls', async () => {
-      vi.useFakeTimers();
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      slider.dispatchEvent(new Event('change'));
-      slider.dispatchEvent(new Event('change'));
-      slider.dispatchEvent(new Event('change'));
-      await vi.advanceTimersByTimeAsync(400);
-
-      expect(mockGameService.configurarPartida).toHaveBeenCalledTimes(1);
-      vi.useRealTimers();
-    });
-
-    it('should not autosave when not host', async () => {
-      vi.useFakeTimers();
-      mockGameService.meuConnectionId.set('conn2');
-      fixture.detectChanges();
-
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      slider.dispatchEvent(new Event('change'));
-      await vi.advanceTimersByTimeAsync(400);
-
-      expect(mockGameService.configurarPartida).not.toHaveBeenCalled();
-      vi.useRealTimers();
-    });
-
-    it('should show saved feedback after autosave completes', async () => {
-      vi.useFakeTimers();
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      slider.dispatchEvent(new Event('change'));
-      await vi.advanceTimersByTimeAsync(400);
-      fixture.detectChanges();
-
-      expect(component.salvando()).toBe(false);
-      expect(component.salvarFeedback()).toBe('SETTINGS.SALVO');
-      const status = fixture.nativeElement.querySelector('.autosave-status');
-      expect(status.textContent).toContain('SETTINGS.SALVO');
-      vi.useRealTimers();
-    });
-
-    it('should show saving indicator while autosave runs', () => {
-      vi.useFakeTimers();
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      slider.dispatchEvent(new Event('change'));
-      expect(component.salvando()).toBe(false);
-
-      vi.advanceTimersByTime(400);
-      expect(component.salvando()).toBe(true);
-      vi.useRealTimers();
-    });
-
-    it('should revert only the invalid field to server state on save error', async () => {
-      vi.useFakeTimers();
-      mockGameService.configurarPartida.mockResolvedValue(null);
-      component.draft.set({ ...createDefaultGameSettings(), numberOfRounds: 5, roundTimeSeconds: 90 });
-
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      slider.dispatchEvent(new Event('change'));
-      await vi.advanceTimersByTimeAsync(400);
-
-      expect(component.salvarFeedback()).toBe('SETTINGS.ERRO');
-      expect(component.draft().numberOfRounds).toBe(4);
-      expect(component.draft().roundTimeSeconds).toBe(90);
-      vi.useRealTimers();
-    });
-
-    it('should revert empty category list to server state on save error', async () => {
-      vi.useFakeTimers();
-      mockGameService.configurarPartida.mockResolvedValue(null);
-      mockGameService.settings.set({ ...createDefaultGameSettings(), categories: ['Objeto', 'Tecnologia'] });
-
-      component.draft.set({ ...createDefaultGameSettings(), categories: [] });
-
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      slider.dispatchEvent(new Event('change'));
-      await vi.advanceTimersByTimeAsync(400);
-
-      expect(component.salvarFeedback()).toBe('SETTINGS.ERRO');
-      expect(component.draft().categories).toEqual(['Objeto', 'Tecnologia']);
-      vi.useRealTimers();
-    });
-
-    it('should revert invalid tipoo lead limit on save error', async () => {
-      vi.useFakeTimers();
-      mockGameService.configurarPartida.mockResolvedValue(null);
-      component.draft.set({ ...createDefaultGameSettings(), tipooLeadLimit: 5 });
-
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      slider.dispatchEvent(new Event('change'));
-      await vi.advanceTimersByTimeAsync(400);
-
-      expect(component.draft().tipooLeadLimit).toBeNull();
-      vi.useRealTimers();
-    });
-
-    it('should keep draft unchanged when autosave succeeds', async () => {
-      vi.useFakeTimers();
-      component.draft.set({ ...createDefaultGameSettings(), roundTimeSeconds: 90 });
-
-      const slider = fixture.nativeElement.querySelector('.config-field input[type="range"]');
-      slider.dispatchEvent(new Event('change'));
-      await vi.advanceTimersByTimeAsync(400);
-
-      expect(component.draft().roundTimeSeconds).toBe(90);
-      vi.useRealTimers();
     });
 
     it('should have a VOLTAR button with translation', () => {

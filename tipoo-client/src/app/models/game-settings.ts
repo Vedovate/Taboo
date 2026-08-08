@@ -12,7 +12,6 @@ export interface GameSettings {
   pointsPerCorrect: number;
   pointsPerError: number;
   pointsPerSkip: number;
-  categories: string[];
   startingTeam: 'azul' | 'vermelho' | 'aleatorio';
   tiebreakMode: 'empatado' | 'rodada-extra';
   pauseBetweenRoundsSeconds: number;
@@ -26,8 +25,8 @@ export const DEFAULT_TIPOO_LEAD_LIMIT = 100;
 
 export function createDefaultGameSettings(): GameSettings {
   return {
-    roundTimeSeconds: 60,
-    numberOfRounds: 4,
+    roundTimeSeconds: 180,
+    numberOfRounds: 6,
     skipLimit: 3,
     skipCostsPoints: false,
     tipooLeadLimit: null,
@@ -39,9 +38,8 @@ export function createDefaultGameSettings(): GameSettings {
     pointsPerCorrect: 1,
     pointsPerError: 1,
     pointsPerSkip: 1,
-    categories: [],
     startingTeam: 'aleatorio',
-    tiebreakMode: 'rodada-extra',
-    pauseBetweenRoundsSeconds: 5,
+    tiebreakMode: 'empatado',
+    pauseBetweenRoundsSeconds: 30,
   };
 }

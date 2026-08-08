@@ -27,6 +27,26 @@ CREATE TABLE IF NOT EXISTS GameHostSettings (
     UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Criar tabela de Partidas (estatísticas). A chave é o código da sala + data/hora de início.
+-- O registro é criado ao INICIAR a partida e atualizado ao ENCERRAR.
+CREATE TABLE IF NOT EXISTS Matches (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    MatchKey TEXT NOT NULL UNIQUE,
+    RoomCode TEXT NOT NULL,
+    HostSessionId TEXT,
+    StartedAt DATETIME NOT NULL,
+    SettingsJson TEXT NOT NULL,
+    StartedPlayers INTEGER NOT NULL,
+    WasStarted INTEGER NOT NULL DEFAULT 1,
+    Completed INTEGER NOT NULL DEFAULT 0,
+    EndedAt DATETIME,
+    FinishedPlayers INTEGER,
+    FinalScoreRed INTEGER,
+    FinalScoreBlue INTEGER,
+    WinnerTeam TEXT,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Inserir as suas cartas oficiais
 INSERT OR IGNORE INTO Cards (MainWord, Forbidden1, Forbidden2, Forbidden3, Forbidden4, Forbidden5, Difficulty, Category) VALUES
 ('CLIPE', 'papel', 'escritório', 'grampo', 'metal', 'junto', 'Fácil', 'Objeto'),

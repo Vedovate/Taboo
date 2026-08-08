@@ -59,7 +59,6 @@ public class GameDataStoreTests : IDisposable
             RoundTimeSeconds = 90,
             NumberOfRounds = 6,
             Difficulties = new List<string> { "Fácil" },
-            Categories = new List<string> { "Objeto" },
             BuzzerSounds = new List<string> { "censura" },
             StartingTeam = "azul",
             TiebreakMode = "empatado",
@@ -76,7 +75,6 @@ public class GameDataStoreTests : IDisposable
         Assert.Equal("azul", loaded.StartingTeam);
         Assert.Equal("empatado", loaded.TiebreakMode);
         Assert.Equal(new[] { "Fácil" }, loaded.Difficulties);
-        Assert.Equal(new[] { "Objeto" }, loaded.Categories);
         Assert.Equal(new[] { "censura" }, loaded.BuzzerSounds);
     }
 
@@ -96,6 +94,62 @@ public class GameDataStoreTests : IDisposable
     public void LoadHostSettings_NoRow_ReturnsNull()
     {
         var loaded = _sut.LoadHostSettings("host-inexistente");
+
+        Assert.Null(loaded);
+    }
+
+    [Fact]
+    public void CreateMatch_ThenGetMatch_RoundTrips()
+    {
+        var match = new GameMatch
+        {
+            MatchKey = "ABC12-20260807T153000123Z",
+            RoomCode = "ABC12",
+            HostSessionId = "host-1",
+            StartedAt = new DateTime(2026, 8, 7, 15, 30, 0, DateTimeKind.Utc),
+            SettingsJson = "{\"NumberOfRounds\":4}",
+            StartedPlayers = 3,
+            WasStarted = true,
+            Completed = false
+        };
+
+        _sut.CreateMatch(match);
+
+        var loaded = _sut.GetMatch("ABC12-20260807T153000123Z");
+
+        Assert.NotNull(loaded);
+        Assert.Equal("ABC12", loaded!.RoomCode);
+        Assert.Equal("host-1", loaded.HostSessionId);
+        Assert.Equal(3, loaded.StartedPlayers);
+        Assert.True(loaded.WasStarted);
+        Assert.False(loaded.Completed);
+        Assert.Equal("{\"NumberOfRounds\":4}", loaded.SettingsJson);
+        Assert.Equal(new DateTime(2026, 8, 7, 15, 30, 0, DateTimeKind.Utc), loaded.StartedAt);
+    }
+
+    [Fact]
+    public void CreateMatch_DuplicateMatchKey_DoesNotThrow()
+    {
+        var match = new GameMatch
+        {
+            MatchKey = "ABC12-20260807T153000123Z",
+            RoomCode = "ABC12",
+            StartedAt = DateTime.UtcNow,
+            SettingsJson = "{}",
+            StartedPlayers = 1
+        };
+
+        _sut.CreateMatch(match);
+        _sut.CreateMatch(match);
+
+        var loaded = _sut.GetMatch("ABC12-20260807T153000123Z");
+        Assert.NotNull(loaded);
+    }
+
+    [Fact]
+    public void GetMatch_NoRow_ReturnsNull()
+    {
+        var loaded = _sut.GetMatch("inexistente");
 
         Assert.Null(loaded);
     }
