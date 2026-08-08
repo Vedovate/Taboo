@@ -41,7 +41,7 @@
 
 .room-code-text {
   font-family: 'Courier New', monospace;
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: 0.15em;
   color: #00baff;
@@ -96,8 +96,8 @@
 .autosave-status {
   margin-left: auto;
   flex-shrink: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: rgba(245, 245, 245, 0.6);
 }
 
@@ -112,7 +112,8 @@
 .panel-heading h2,
 .panel-title-group h2 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.15rem;
+  font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -127,7 +128,7 @@
 .panel-note {
   margin: 0.25rem 0 0;
   color: rgba(245, 245, 245, 0.6);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .config-field {
@@ -137,7 +138,8 @@
 
 .config-field span {
   display: block;
-  font-size: 0.92rem;
+  font-size: 1rem;
+  font-weight: 600;
   color: rgba(245, 245, 245, 0.8);
 }
 
@@ -148,7 +150,8 @@
 }
 
 .config-label span {
-  font-size: 0.92rem;
+  font-size: 1rem;
+  font-weight: 600;
   color: rgba(245, 245, 245, 0.8);
 }
 
@@ -156,7 +159,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.92rem;
+  font-size: 1rem;
+  font-weight: 600;
   color: rgba(245, 245, 245, 0.8);
   cursor: pointer;
 }
@@ -181,7 +185,8 @@
   border-radius: 0.75rem;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: rgba(245, 245, 245, 0.85);
   cursor: pointer;
 }
@@ -220,7 +225,8 @@ select:disabled,
   justify-content: space-between;
   gap: 1rem;
   color: rgba(245, 245, 245, 0.6);
-  font-size: 0.9rem;
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 input[type='range'] {
@@ -298,11 +304,14 @@ input[type='number'] {
 .player-row .player-slot {
   flex-shrink: 0;
   width: 2rem;
+  font-weight: 800;
 }
 
 .player-row strong {
   flex: 1;
   min-width: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .player-row .player-status {
@@ -311,10 +320,10 @@ input[type='number'] {
 
 .nome-feedback {
   flex-shrink: 0;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   padding: 0.2rem 0.5rem;
   border-radius: 0.5rem;
-  font-weight: 600;
+  font-weight: 700;
   pointer-events: none;
   animation: fadeIn 0.15s ease;
 }
@@ -351,7 +360,8 @@ input[type='number'] {
   border: 1px solid rgba(0, 186, 255, 0.4);
   background: rgba(255, 255, 255, 0.06);
   color: #f5f5f5;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
+  font-weight: 600;
   outline: none;
 }
 
@@ -360,7 +370,8 @@ input[type='number'] {
 }
 
 .player-status {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: rgba(245, 245, 245, 0.75);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -402,12 +413,12 @@ input[type='number'] {
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   padding: 0.25rem 0.6rem;
   border-radius: 0.5rem;
   background: #00baff;
   color: #121212;
-  font-weight: 600;
+  font-weight: 700;
   pointer-events: none;
   z-index: 10;
 }
@@ -429,7 +440,8 @@ input[type='number'] {
 
 .team-card h3 {
   margin: 0 0 1rem;
-  font-size: 1rem;
+  font-size: 1.3rem;
+  font-weight: 800;
   color: currentColor;
 }
 
@@ -491,8 +503,8 @@ input[type='number'] {
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.04);
   color: #f5f5f5;
-  font-weight: 600;
-  font-size: 0.8rem;
+  font-weight: 700;
+  font-size: 0.95rem;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s;
@@ -517,7 +529,8 @@ input[type='number'] {
   padding: 0.4rem 0.6rem;
   border-radius: 0.65rem;
   background: rgba(255, 255, 255, 0.04);
-  font-size: 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .team-player-list .icon {
@@ -563,12 +576,12 @@ input[type='number'] {
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
-  font-size: 0.85rem;
+  font-size: 1rem;
   padding: 0.4rem 0.9rem;
   border-radius: 0.65rem;
   background: #00baff;
   color: #121212;
-  font-weight: 700;
+  font-weight: 800;
   pointer-events: none;
   z-index: 10;
   animation: fadeIn 0.15s ease;

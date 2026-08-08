@@ -19,13 +19,13 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
     }
 
     .tooltip-btn {
-      width: 1.05rem;
-      height: 1.05rem;
+      width: 1.2rem;
+      height: 1.2rem;
       border-radius: 50%;
       border: 1px solid rgba(245, 245, 245, 0.45);
       background: transparent;
       color: rgba(245, 245, 245, 0.75);
-      font-size: 0.7rem;
+      font-size: 0.85rem;
       line-height: 1;
       display: inline-flex;
       align-items: center;
@@ -42,9 +42,9 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
       width: max-content;
       max-width: 280px;
       white-space: normal;
-      font-size: 0.8rem;
+      font-size: 1rem;
       line-height: 1.4;
-      font-weight: 400;
+      font-weight: 500;
       padding: 0.5rem 0.75rem;
       border-radius: 0.6rem;
       background: #00baff;

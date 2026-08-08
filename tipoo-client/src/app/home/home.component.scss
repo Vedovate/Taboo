@@ -41,6 +41,7 @@
 .brand-tagline {
   color: rgba(245, 245, 245, 0.75);
   font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .header-actions {
@@ -180,7 +181,8 @@
 
 .room-code-panel strong {
   color: #ffffff;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
+  font-weight: 800;
   letter-spacing: 0.18em;
 }
 
@@ -257,6 +259,7 @@
 .field-label {
   color: rgba(245, 245, 245, 0.72);
   font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .input-shell {
@@ -313,6 +316,7 @@ input[type='text']::placeholder {
   margin: 0;
   color: rgba(245, 245, 245, 0.6);
   font-size: 0.95rem;
+  font-weight: 500;
 }
 
 @media (max-width: 980px) {

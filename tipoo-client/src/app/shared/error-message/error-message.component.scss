@@ -7,17 +7,18 @@
   border: 1px solid #fecaca;
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
+  font-size: 1rem;
   margin: 0.5rem 0;
 }
 
 .error-text {
   flex: 1;
+  font-weight: 600;
 }
 
 .error-countdown {
   flex-shrink: 0;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: #dc2626;
   opacity: 0.7;
 }
