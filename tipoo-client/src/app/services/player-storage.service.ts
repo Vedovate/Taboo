@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-const STORAGE_KEY = 'taboo_player_name';
+const STORAGE_KEY = 'tipoo_player_name';
 
 @Injectable({ providedIn: 'root' })
 export class PlayerStorageService {

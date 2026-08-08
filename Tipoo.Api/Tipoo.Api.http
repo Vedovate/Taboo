@@ -1,6 +1,6 @@
-@Taboo.Api_HostAddress = http://localhost:5123
+@Tipoo.Api_HostAddress = http://localhost:5123
 
-GET {{Taboo.Api_HostAddress}}/weatherforecast/
+GET {{Tipoo.Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###

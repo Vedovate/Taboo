@@ -1,4 +1,4 @@
-namespace Taboo.Api.Models;
+namespace Tipoo.Api.Models;
 
 public class Player
 {

@@ -20,7 +20,7 @@ describe('TranslatePipe', () => {
     mockService = {
       language: signal('pt-BR'),
       translations: signal({
-        'HOME.WELCOME_TITLE': 'Bem-vindo ao Taboo',
+        'HOME.WELCOME_TITLE': 'Bem-vindo ao Tipoo',
         'HOME.TAGLINE': 'Jogo de palavras',
       }),
       loading: signal(false),
@@ -47,7 +47,7 @@ describe('TranslatePipe', () => {
 
     it('should translate a known key', () => {
       const result = pipe.transform('HOME.WELCOME_TITLE');
-      expect(result).toBe('Bem-vindo ao Taboo');
+      expect(result).toBe('Bem-vindo ao Tipoo');
     });
 
     it('should return the key if translation is not found', () => {
@@ -78,13 +78,13 @@ describe('TranslatePipe', () => {
     it('should clear cache when translations signal changes', () => {
       pipe.transform('HOME.WELCOME_TITLE');
 
-      mockService.translations.set({ 'HOME.WELCOME_TITLE': 'Welcome to Taboo' });
+      mockService.translations.set({ 'HOME.WELCOME_TITLE': 'Welcome to Tipoo' });
 
       const spy = vi.spyOn(mockService, 'translate');
       const result = pipe.transform('HOME.WELCOME_TITLE');
 
       expect(spy).toHaveBeenCalled();
-      expect(result).toBe('Welcome to Taboo');
+      expect(result).toBe('Welcome to Tipoo');
     });
   });
 });

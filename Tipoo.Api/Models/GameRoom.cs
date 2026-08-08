@@ -1,12 +1,14 @@
-namespace Taboo.Api.Models;
+namespace Tipoo.Api.Models;
 
 public class GameRoom
 {
     public string RoomCode { get; set; } = string.Empty;
     public string HostSessionId { get; set; } = string.Empty; // Token do localStorage do Host
     public List<Player> Players { get; set; } = new();
-    
+
     public int MaxPlayers { get; set; } = 3;
+
+    public GameSettings Settings { get; set; } = new();
 
     // Estado do jogo
     public int ScoreTeamBlue { get; set; }

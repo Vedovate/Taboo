@@ -1,10 +1,10 @@
-using Taboo.Api.Models;
+using Tipoo.Api.Models;
 
-namespace Taboo.Api.Services;
+namespace Tipoo.Api.Services;
 
 public interface IGameManager
 {
-    bool CreateRoom(string roomCode, string connectionId, string userName);
+    bool CreateRoom(string roomCode, string connectionId, string userName, string hostSessionId = "");
 
     void AddPlayerToRoom(string roomCode, string connectionId, string userName);
 
@@ -33,4 +33,8 @@ public interface IGameManager
     string? RandomizarTime(string roomCode, string connectionId);
 
     bool ForcarIniciar(string roomCode, string connectionId);
+
+    GameSettings? ConfigurarPartida(string roomCode, string connectionId, GameSettings settings);
+
+    GameSettings ObterConfiguracoes(string roomCode);
 }

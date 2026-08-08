@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.SignalR;
-using Taboo.Api.Database;
-using Taboo.Api.Filters;
-using Taboo.Api.Hubs;
-using Taboo.Api.Services;
+using Tipoo.Api.Database;
+using Tipoo.Api.Data;
+using Tipoo.Api.Filters;
+using Tipoo.Api.Hubs;
+using Tipoo.Api.Infrastructure;
+using Tipoo.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,18 +31,17 @@ builder.Services.AddCors(options =>
     });
 });
 
+var configuredConnectionString = builder.Configuration.GetConnectionString("SqliteConnection") ?? string.Empty;
+var connectionStringProvider = new ConnectionStringProvider(configuredConnectionString, builder.Environment.ContentRootPath);
+builder.Services.AddSingleton(connectionStringProvider);
+builder.Services.AddSingleton<IGameDataStore, GameDataStore>();
 builder.Services.AddSingleton<IGameManager, GameManager>();
 
 var app = builder.Build();
-var connectionString = app.Configuration.GetConnectionString("SqliteConnection");
 
-if (!string.IsNullOrEmpty(connectionString))
+if (!string.IsNullOrEmpty(configuredConnectionString))
 {
-    var fileName = connectionString.Replace("Data Source=", "");
-    var fullPath = Path.Combine(app.Environment.ContentRootPath, "Database", fileName);
-    connectionString = $"Data Source={fullPath}";
-
-    DbInitializer.Initialize(connectionString);
+    DbInitializer.Initialize(connectionStringProvider.ConnectionString);
 }
 
 // Configure the HTTP request pipeline.

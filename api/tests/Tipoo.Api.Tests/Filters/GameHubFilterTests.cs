@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using Taboo.Api.Filters;
-using Taboo.Api.Hubs;
+using Tipoo.Api.Filters;
+using Tipoo.Api.Hubs;
 
-namespace Taboo.Api.Tests.Filters;
+namespace Tipoo.Api.Tests.Filters;
 
 public class GameHubFilterTests
 {

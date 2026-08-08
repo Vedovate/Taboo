@@ -1,14 +1,18 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using Taboo.Api.Hubs;
-using Taboo.Api.Services;
+using Tipoo.Api.Data;
+using Tipoo.Api.DTOs;
+using Tipoo.Api.Hubs;
+using Tipoo.Api.Models;
+using Tipoo.Api.Services;
 
-namespace Taboo.Api.Tests.Hubs;
+namespace Tipoo.Api.Tests.Hubs;
 
 public class GameHubTests
 {
     private readonly GameManager _gameManager;
+    private readonly Mock<IGameDataStore> _dataStore;
     private readonly Mock<IHubCallerClients> _mockClients;
     private readonly Mock<IClientProxy> _mockGroupProxy;
     private readonly Mock<ISingleClientProxy> _mockCallerProxy;
@@ -18,7 +22,8 @@ public class GameHubTests
 
     public GameHubTests()
     {
-        _gameManager = new GameManager(NullLogger<GameManager>.Instance);
+        _dataStore = new Mock<IGameDataStore>();
+        _gameManager = new GameManager(NullLogger<GameManager>.Instance, _dataStore.Object);
         _mockClients = new Mock<IHubCallerClients>();
         _mockGroupProxy = new Mock<IClientProxy>();
         _mockCallerProxy = new Mock<ISingleClientProxy>();
@@ -49,7 +54,7 @@ public class GameHubTests
 
     private GameHub CreateHub()
     {
-        return new GameHub(_gameManager, NullLogger<GameHub>.Instance)
+        return new GameHub(_gameManager, _dataStore.Object, NullLogger<GameHub>.Instance)
         {
             Clients = _mockClients.Object,
             Context = _mockContext.Object,
@@ -656,5 +661,151 @@ public class GameHubTests
         _mockGroupProxy.Verify(
             p => p.SendCoreAsync("AtualizarJogadores", It.IsAny<object?[]>(), default),
             Times.Once);
+    }
+
+    private static GameSettings CriarSettingsValidas()
+    {
+        return new GameSettings
+        {
+            RoundTimeSeconds = 60,
+            NumberOfRounds = 4,
+            SkipLimit = 3,
+            SkipCostsPoints = false,
+            TipooLeadLimit = null,
+            ExplanationTimeSeconds = 5,
+            Difficulties = new List<string> { "Fácil", "Médio", "Difícil" },
+            BuzzerSounds = new List<string> { "air-horn", "censura", "erro" },
+            RandomBuzzerSound = true,
+            PanicMode = false,
+            PointsPerCorrect = 1,
+            PointsPerError = 1,
+            PointsPerSkip = 1,
+            Categories = new List<string> { "Objeto", "Tecnologia" },
+            StartingTeam = "aleatorio",
+            TiebreakMode = "rodada-extra",
+            PauseBetweenRoundsSeconds = 5
+        };
+    }
+
+    [Fact]
+    public async Task CriarSala_WithHostSessionId_StoresTokenOnRoom()
+    {
+        var hub = CreateHub();
+
+        var result = await hub.CriarSala("ABC12", "Player1", "host-session-1");
+
+        Assert.True(result);
+        var room = _gameManager.GetRoom("ABC12");
+        Assert.NotNull(room);
+        Assert.Equal("host-session-1", room!.HostSessionId);
+    }
+
+    [Fact]
+    public async Task CriarSala_Valid_SendsSettingsAndOptionsToCaller()
+    {
+        _dataStore.Setup(d => d.GetAllCards()).Returns(new List<Card>
+        {
+            new() { MainWord = "CLIPE", Difficulty = "Fácil", Category = "Objeto" },
+            new() { MainWord = "SOFTWARE", Difficulty = "Fácil", Category = "Tecnologia" },
+            new() { MainWord = "ALFABETO", Difficulty = "Difícil", Category = "Conceito" }
+        });
+        var hub = CreateHub();
+
+        await hub.CriarSala("ABC12", "Player1");
+
+        _mockCallerProxy.Verify(
+            p => p.SendCoreAsync("ReceberConfiguracoes", It.IsAny<object?[]>(), default),
+            Times.Once);
+        _mockCallerProxy.Verify(
+            p => p.SendCoreAsync("ReceberOpcoesCartas", It.IsAny<object?[]>(), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ConfigurarPartida_Host_ReturnsSettingsAndBroadcasts()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        var hub = CreateHub();
+
+        var result = await hub.ConfigurarPartida(CriarSettingsValidas());
+
+        Assert.NotNull(result);
+        Assert.Equal(60, result!.RoundTimeSeconds);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync("AtualizarConfiguracoes", It.IsAny<object?[]>(), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ConfigurarPartida_NonHost_ReturnsNullAndDoesNotBroadcast()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        _gameManager.AddPlayerToRoom("ABC12", "conn2", "Player2");
+        _mockContext.Setup(c => c.ConnectionId).Returns("conn2");
+        var hub = CreateHub();
+
+        var result = await hub.ConfigurarPartida(CriarSettingsValidas());
+
+        Assert.Null(result);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync("AtualizarConfiguracoes", It.IsAny<object?[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ConfigurarPartida_InvalidSettings_ReturnsNull()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        var settings = CriarSettingsValidas();
+        settings.NumberOfRounds = 5;
+        var hub = CreateHub();
+
+        var result = await hub.ConfigurarPartida(settings);
+
+        Assert.Null(result);
+        _mockGroupProxy.Verify(
+            p => p.SendCoreAsync("AtualizarConfiguracoes", It.IsAny<object?[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public void ObterConfiguracoes_PlayerInRoom_ReturnsRoomSettings()
+    {
+        _gameManager.CreateRoom("ABC12", "conn1", "Player1");
+        var hub = CreateHub();
+
+        var result = hub.ObterConfiguracoes();
+
+        Assert.NotNull(result);
+        Assert.Equal(60, result.RoundTimeSeconds);
+    }
+
+    [Fact]
+    public void ObterConfiguracoes_PlayerNotInRoom_ReturnsDefaults()
+    {
+        var hub = CreateHub();
+
+        var result = hub.ObterConfiguracoes();
+
+        Assert.NotNull(result);
+        Assert.Equal(60, result.RoundTimeSeconds);
+    }
+
+    [Fact]
+    public void ObterOpcoesCartas_ReturnsDistinctValues()
+    {
+        _dataStore.Setup(d => d.GetAllCards()).Returns(new List<Card>
+        {
+            new() { MainWord = "CLIPE", Difficulty = "Fácil", Category = "Objeto" },
+            new() { MainWord = "PASTA", Difficulty = "Fácil", Category = "Objeto" },
+            new() { MainWord = "SOFTWARE", Difficulty = "Médio", Category = "Tecnologia" },
+            new() { MainWord = "ALFABETO", Difficulty = "Difícil", Category = "Conceito" }
+        });
+        var hub = CreateHub();
+
+        var result = hub.ObterOpcoesCartas();
+
+        Assert.Equal(new[] { "Difícil", "Fácil", "Médio" }, result.Dificuldades);
+        Assert.Equal(new[] { "Conceito", "Objeto", "Tecnologia" }, result.Categorias);
     }
 }

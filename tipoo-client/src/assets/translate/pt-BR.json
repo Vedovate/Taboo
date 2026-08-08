@@ -4,7 +4,7 @@
     "NAV_RULES": "Regras",
     "NAV_ABOUT": "Sobre",
     "NAV_PROFILE": "Perfil",
-    "WELCOME_TITLE": "BEM-VINDO AO TABOO",
+    "WELCOME_TITLE": "BEM-VINDO AO TIPOO",
     "CREATE_ROOM_LABEL": "CRIAR SALA",
     "CREATE_ROOM": "CRIAR SALA",
     "CREATE_NOTE": "Inicie uma partida com amigos",
@@ -15,7 +15,7 @@
     "JOIN_ROOM": "ENTRAR NA SALA",
     "JOIN_NOTE": "Compartilhe o código para que seus amigos possam se juntar à partida.",
     "DONATE": "APOIE O DEV: Doação Voluntária ❤️",
-    "FOOTER_COPY": "© 2024 Taboo Online. Desenvolvido por [Dev Name]. Todos os direitos reservados.",
+    "FOOTER_COPY": "© 2026 Tipoo Game. Desenvolvido por Leonardo Vedovate. Todos os direitos reservados.",
     "LANG_TOGGLE_LABEL": "Trocar idioma",
     "ROOM_CODE_TEXT": "Código da sala",
     "ERROR_ENTER_CODE": "Digite um código de sala para entrar.",
@@ -37,5 +37,63 @@
     "PRONTO": "PRONTO",
     "FORCAR_INICIAR": "FORÇAR INICIAR",
     "INICIANDO": "Agora vai iniciar!"
+  },
+  "SETTINGS": {
+    "TITLE": "CONFIGURAÇÃO DA PARTIDA",
+    "HOST_ONLY": "Apenas o host pode alterar",
+    "SAVE": "SALVAR CONFIGURAÇÕES",
+    "READ_ONLY": "As configurações da partida são definidas pelo host",
+    "SALVO": "Salvo!",
+    "ERRO": "Erro ao salvar configuração",
+    "SAVING": "Salvando...",
+    "ROUND_TIME": "Tempo da Rodada",
+    "NUMBER_OF_ROUNDS": "Número de Rodadas",
+    "SKIP_LIMIT": "Limite de Pulos",
+    "SKIP_COSTS_POINTS": "Pulos descontam pontos",
+    "TIPOO_LEAD_LIMIT": "Punição do Tipoo",
+    "TIPOO_ENABLED": "Ativar punição do Tipoo",
+    "EXPLANATION_TIME": "Tempo de Explicação",
+    "POINTS_CORRECT": "Pontos por acerto",
+    "POINTS_ERROR": "Pontos por erro",
+    "POINTS_SKIP": "Pontos por pulo",
+    "DIFFICULTIES": "Dificuldade das Cartas",
+    "CATEGORIES": "Categorias das Cartas",
+    "BUZZER_SOUNDS": "Som da Buzina",
+    "BUZZER_RANDOM": "Som aleatório",
+    "STARTING_TEAM": "Time que inicia",
+    "TIEBREAK": "Desempate",
+    "PAUSE_BETWEEN_ROUNDS": "Pausa entre rodadas",
+    "PANIC_MODE": "Modo Pânico",
+    "TOOLTIP": {
+      "ROUND_TIME": "Tempo do cronômetro para o jogador dar as dicas. Entre 30 segundos e 5 minutos.",
+      "NUMBER_OF_ROUNDS": "Número total de rodadas. Precisa ser um número par para que os dois times joguem a mesma quantidade de vezes.",
+      "SKIP_LIMIT": "Quantas cartas o jogador pode pular por turno. Marque a opção para que cada pulo desconte pontos.",
+      "TIPOO_LEAD_LIMIT": "Se um time abrir esta vantagem de pontos sobre o outro, a partida termina. Mínimo de 10 pontos. Desative para nunca encerrar por vantagem.",
+      "EXPLANATION_TIME": "Tempo extra (até 15s) concedido a quem foi buzinado para explicar a palavra proibida. 0 desativa o tempo extra.",
+      "POINTS_CORRECT": "Pontos ganhos por cada acerto.",
+      "POINTS_ERROR": "Pontos descontados por cada carta errada (buzinada).",
+      "POINTS_SKIP": "Pontos descontados por cada carta pulada.",
+      "DIFFICULTIES": "Quais níveis de dificuldade de cartas entram na partida. Selecione pelo menos 1.",
+      "CATEGORIES": "Quais categorias de cartas entram na partida. Jogar com várias categorias deixa o jogo mais dinâmico. Selecione pelo menos 1.",
+      "BUZZER_SOUNDS": "Quais efeitos sonoros podem tocar na buzina. Com o som aleatório ativo, um deles é sorteado a cada buzinada.",
+      "STARTING_TEAM": "Qual time começa a primeira rodada. Aleatório evita vantagem de quem começa.",
+      "TIEBREAK": "O que fazer se a partida terminar empatada: terminar empatado ou adicionar uma rodada para cada time.",
+      "PAUSE_BETWEEN_ROUNDS": "Tempo de transição entre rodadas para conferência de pontos e buzinadas.",
+      "PANIC_MODE": "Oculta o cronômetro para os jogadores durante as rodadas."
+    },
+    "BUZZER": {
+      "air-horn": "Buzina de ar",
+      "censura": "Censura",
+      "erro": "Erro"
+    },
+    "TEAM": {
+      "azul": "Azul",
+      "vermelho": "Vermelho",
+      "aleatorio": "Aleatório"
+    },
+    "TIEBREAK_MODE": {
+      "empatado": "Terminar empatado",
+      "rodada-extra": "Rodada extra por time"
+    }
   }
 }

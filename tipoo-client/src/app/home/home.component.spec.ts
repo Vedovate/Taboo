@@ -4,6 +4,7 @@ import { computed, signal, WritableSignal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { HomeComponent } from './home.component';
 import { GameService } from '../services/game.service';
+import { HostSessionService } from '../services/host-session.service';
 import { PlayerStorageService } from '../services/player-storage.service';
 import { TranslateService } from '../services/translate.service';
 
@@ -82,6 +83,7 @@ describe('HomeComponent', () => {
         { provide: GameService, useValue: mockGameService },
         { provide: PlayerStorageService, useValue: mockPlayerStorage },
         { provide: TranslateService, useValue: mockTranslateService },
+        { provide: HostSessionService, useValue: { getOrCreate: vi.fn(() => 'host-session-1') } },
       ],
     }).compileComponents();
 
@@ -167,7 +169,7 @@ describe('HomeComponent', () => {
 
       await component.goToLobby();
 
-      expect(mockGameService.createRoom).toHaveBeenCalledWith(expect.any(String), 'CachedName');
+      expect(mockGameService.createRoom).toHaveBeenCalledWith(expect.any(String), 'CachedName', 'host-session-1');
     });
 
     it('should save name on successful room creation', async () => {

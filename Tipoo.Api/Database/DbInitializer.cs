@@ -2,7 +2,7 @@ using System.Reflection;
 using Microsoft.Data.Sqlite;
 using Dapper;
 
-namespace Taboo.Api.Database;
+namespace Tipoo.Api.Database;
 
 public static class DbInitializer
 {
@@ -12,7 +12,7 @@ public static class DbInitializer
         connection.Open();
 
         var assembly = Assembly.GetExecutingAssembly();
-        var resourceName = "Taboo.Api.Database.init.sql";
+        var resourceName = "Tipoo.Api.Database.init.sql";
 
         using var stream = assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException($"Embedded resource '{resourceName}' não encontrado.");

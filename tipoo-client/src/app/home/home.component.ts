@@ -2,16 +2,17 @@ import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { LucideArrowRight, LucideHash, LucidePlus } from '@lucide/angular';
 import { GameService } from '../services/game.service';
+import { HostSessionService } from '../services/host-session.service';
 import { PlayerStorageService } from '../services/player-storage.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { TranslateService } from '../services/translate.service';
-import { LogoPlaceholderComponent } from './logo-placeholder/logo-placeholder.component';
+import { LogoComponent } from './logo/logo.component';
 import { ErrorMessageComponent } from '../shared/error-message/error-message.component';
 
 @Component({
   standalone: true,
   selector: 'app-home',
-  imports: [TranslatePipe, LucidePlus, LucideHash, LucideArrowRight, LogoPlaceholderComponent, ErrorMessageComponent],
+  imports: [TranslatePipe, LucidePlus, LucideHash, LucideArrowRight, LogoComponent, ErrorMessageComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
 })
@@ -35,6 +36,7 @@ export class HomeComponent {
     private router: Router,
     public gameService: GameService,
     private playerStorage: PlayerStorageService,
+    private hostSession: HostSessionService,
   ) {
     void this.translateService.use(this.currentLanguage());
   }
@@ -52,7 +54,8 @@ export class HomeComponent {
 
     for (let attempt = 0; attempt < maximumAttempts; attempt += 1) {
       const code = this.generateRoomCode();
-      await this.gameService.createRoom(code, baseName);
+      const sessionId = this.hostSession.getOrCreate();
+      await this.gameService.createRoom(code, baseName, sessionId);
 
       if (this.gameService.connected()) {
         this.playerStorage.saveName(baseName);

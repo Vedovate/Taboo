@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { GameService } from './game.service';
+import { createDefaultGameSettings } from '../models/game-settings';
 
 const signalrMock = vi.hoisted(() => {
   const handlers = new Map<string, (...args: any[]) => void>();
@@ -366,6 +367,81 @@ describe('GameService', () => {
 
       expect(service.error()).toBe('');
       expect(service.errorTimeLeft()).toBe(0);
+    });
+  });
+
+  describe('createRoom hostSessionId', () => {
+    it('should pass hostSessionId to CriarSala invoke', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+
+      await service.createRoom('ABC12', 'Player1', 'host-session-1');
+
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('CriarSala', 'ABC12', 'Player1', 'host-session-1');
+    });
+  });
+
+  describe('settings', () => {
+    it('should update settings signal on ReceberConfiguracoes', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+
+      const config = { ...createDefaultGameSettings(), roundTimeSeconds: 90 };
+      signalrMock.triggerEvent('ReceberConfiguracoes', config);
+
+      expect(service.settings().roundTimeSeconds).toBe(90);
+    });
+
+    it('should update settings signal on AtualizarConfiguracoes', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+
+      const config = { ...createDefaultGameSettings(), numberOfRounds: 8 };
+      signalrMock.triggerEvent('AtualizarConfiguracoes', config);
+
+      expect(service.settings().numberOfRounds).toBe(8);
+    });
+
+    it('should update cardOptions signal on ReceberOpcoesCartas', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+
+      signalrMock.triggerEvent('ReceberOpcoesCartas', { dificuldades: ['Fácil'], categorias: ['Objeto'] });
+
+      expect(service.cardOptions().dificuldades).toEqual(['Fácil']);
+      expect(service.cardOptions().categorias).toEqual(['Objeto']);
+    });
+
+    it('should call ConfigurarPartida and update settings on success', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+      signalrMock.mockConnection.invoke.mockClear();
+
+      const config = { ...createDefaultGameSettings(), roundTimeSeconds: 90 };
+      signalrMock.mockConnection.invoke.mockResolvedValue(config);
+
+      const result = await service.configurarPartida(config);
+
+      expect(result).toEqual(config);
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('ConfigurarPartida', config);
+      expect(service.settings().roundTimeSeconds).toBe(90);
+    });
+
+    it('should return null when not connected', async () => {
+      const result = await service.configurarPartida(createDefaultGameSettings());
+
+      expect(result).toBeNull();
+      expect(signalrMock.mockConnection.invoke).not.toHaveBeenCalled();
+    });
+
+    it('should reset settings and cardOptions on desconectar', async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+      signalrMock.triggerEvent('ReceberOpcoesCartas', { dificuldades: ['Difícil'], categorias: ['Conceito'] });
+
+      await service.desconectar();
+
+      expect(service.settings()).toEqual(createDefaultGameSettings());
+      expect(service.cardOptions()).toEqual({ dificuldades: [], categorias: [] });
     });
   });
 });

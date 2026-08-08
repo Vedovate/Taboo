@@ -1,16 +1,19 @@
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
-using Taboo.Api.Models;
+using Tipoo.Api.Data;
+using Tipoo.Api.Models;
 
-namespace Taboo.Api.Services;
+namespace Tipoo.Api.Services;
 
 public partial class GameManager : IGameManager
 {
     private readonly ILogger<GameManager> _logger;
+    private readonly IGameDataStore _dataStore;
 
-    public GameManager(ILogger<GameManager> logger)
+    public GameManager(ILogger<GameManager> logger, IGameDataStore dataStore)
     {
         _logger = logger;
+        _dataStore = dataStore;
     }
     public ConcurrentDictionary<string, GameRoom> GameRooms { get; } = new();
 
@@ -32,12 +35,30 @@ public partial class GameManager : IGameManager
         return GameRooms.ContainsKey(roomCode);
     }
 
-    public bool CreateRoom(string roomCode, string connectionId, string userName)
+    public bool CreateRoom(string roomCode, string connectionId, string userName, string hostSessionId = "")
     {
         var newRoom = new GameRoom
         {
-            RoomCode = roomCode
+            RoomCode = roomCode,
+            HostSessionId = hostSessionId
         };
+
+        if (!string.IsNullOrEmpty(hostSessionId))
+        {
+            try
+            {
+                var cachedSettings = _dataStore.LoadHostSettings(hostSessionId);
+                if (cachedSettings is not null)
+                {
+                    newRoom.Settings = cachedSettings;
+                    _logger.LogInformation("Sala {RoomCode} criada com configurações em cache do host {HostSessionId}", roomCode, hostSessionId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Falha ao carregar configurações em cache do host {HostSessionId}", hostSessionId);
+            }
+        }
 
         if (!GameRooms.TryAdd(roomCode, newRoom))
         {
@@ -409,5 +430,99 @@ public partial class GameManager : IGameManager
             _logger.LogInformation("Partida iniciada na sala {RoomCode} pelo host {ConnectionId}", roomCode, connectionId);
             return true;
         }
+    }
+
+    public GameSettings? ConfigurarPartida(string roomCode, string connectionId, GameSettings settings)
+    {
+        if (!GameRooms.TryGetValue(roomCode, out var gameRoom))
+        {
+            _logger.LogWarning("ConfigurarPartida: sala {RoomCode} não encontrada", roomCode);
+            return null;
+        }
+
+        lock (gameRoom)
+        {
+            var player = gameRoom.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
+            if (player is null || !player.IsHost)
+            {
+                _logger.LogWarning("ConfigurarPartida: jogador {ConnectionId} não é host na sala {RoomCode}", connectionId, roomCode);
+                return null;
+            }
+
+            if (!TryNormalizarSettings(settings, out var normalized))
+            {
+                _logger.LogWarning("ConfigurarPartida: configurações inválidas na sala {RoomCode}", roomCode);
+                return null;
+            }
+
+            gameRoom.Settings = normalized;
+
+            if (!string.IsNullOrEmpty(gameRoom.HostSessionId))
+            {
+                _dataStore.SaveHostSettings(gameRoom.HostSessionId, normalized);
+            }
+
+            _logger.LogInformation("Configurações atualizadas na sala {RoomCode} pelo host {ConnectionId}", roomCode, connectionId);
+            return normalized;
+        }
+    }
+
+    public GameSettings ObterConfiguracoes(string roomCode)
+    {
+        if (!GameRooms.TryGetValue(roomCode, out var gameRoom))
+        {
+            _logger.LogWarning("ObterConfiguracoes: sala {RoomCode} não encontrada", roomCode);
+            return new GameSettings();
+        }
+
+        lock (gameRoom)
+        {
+            return gameRoom.Settings;
+        }
+    }
+
+    private static bool TryNormalizarSettings(GameSettings settings, out GameSettings normalized)
+    {
+        normalized = settings.Clone();
+
+        normalized.RoundTimeSeconds = Math.Clamp(settings.RoundTimeSeconds, GameSettings.MinRoundTimeSeconds, GameSettings.MaxRoundTimeSeconds);
+        normalized.ExplanationTimeSeconds = Math.Clamp(settings.ExplanationTimeSeconds, 0, GameSettings.MaxExplanationTimeSeconds);
+        normalized.SkipLimit = Math.Clamp(settings.SkipLimit, 0, GameSettings.MaxSkipLimit);
+        normalized.PointsPerCorrect = Math.Clamp(settings.PointsPerCorrect, 0, GameSettings.MaxPoints);
+        normalized.PointsPerError = Math.Clamp(settings.PointsPerError, 0, GameSettings.MaxPoints);
+        normalized.PointsPerSkip = Math.Clamp(settings.PointsPerSkip, 0, GameSettings.MaxPoints);
+        normalized.PauseBetweenRoundsSeconds = Math.Clamp(settings.PauseBetweenRoundsSeconds, 0, GameSettings.MaxPauseBetweenRoundsSeconds);
+
+        if (settings.NumberOfRounds < GameSettings.MinNumberOfRounds
+            || settings.NumberOfRounds > GameSettings.MaxNumberOfRounds
+            || settings.NumberOfRounds % 2 != 0)
+        {
+            return false;
+        }
+
+        if (settings.TipooLeadLimit.HasValue && settings.TipooLeadLimit.Value < GameSettings.MinTipooLeadLimit)
+        {
+            return false;
+        }
+
+        if (settings.Difficulties.Count == 0 || settings.Categories.Count == 0 || settings.BuzzerSounds.Count == 0)
+        {
+            return false;
+        }
+
+        if (settings.StartingTeam is not ("azul" or "vermelho" or "aleatorio"))
+        {
+            return false;
+        }
+
+        if (settings.TiebreakMode is not ("empatado" or "rodada-extra"))
+        {
+            return false;
+        }
+
+        normalized.Difficulties = settings.Difficulties.Distinct().ToList();
+        normalized.Categories = settings.Categories.Distinct().ToList();
+        normalized.BuzzerSounds = settings.BuzzerSounds.Distinct().ToList();
+        return true;
     }
 }

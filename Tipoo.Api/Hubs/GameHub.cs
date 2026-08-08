@@ -1,18 +1,22 @@
-// src/Taboo.Api/Hubs/GameHub.cs
+// src/Tipoo.Api/Hubs/GameHub.cs
 using Microsoft.AspNetCore.SignalR;
-using Taboo.Api.DTOs;
-using Taboo.Api.Services;
+using Tipoo.Api.Data;
+using Tipoo.Api.DTOs;
+using Tipoo.Api.Models;
+using Tipoo.Api.Services;
 
-namespace Taboo.Api.Hubs;
+namespace Tipoo.Api.Hubs;
 
 public class GameHub : Hub
 {
     private readonly IGameManager _gameManager;
+    private readonly IGameDataStore _dataStore;
     private readonly ILogger<GameHub> _logger;
 
-    public GameHub(IGameManager gameManager, ILogger<GameHub> logger)
+    public GameHub(IGameManager gameManager, IGameDataStore dataStore, ILogger<GameHub> logger)
     {
         _gameManager = gameManager;
+        _dataStore = dataStore;
         _logger = logger;
     }
 
@@ -58,11 +62,13 @@ public class GameHub : Hub
 
         var players = MapearJogadores(sala);
         await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
+
+        await EnviarConfiguracoesAoCaller(sala);
         _logger.LogInformation("Jogador {ConnectionId} entrou na sala {Sala}", Context.ConnectionId, sala);
         return true;
     }
 
-    public async Task<bool> CriarSala(string codigoSala, string nomeUsuario)
+    public async Task<bool> CriarSala(string codigoSala, string nomeUsuario, string hostSessionId = "")
     {
         var sala = codigoSala.Trim();
         var usuario = nomeUsuario.Trim();
@@ -73,7 +79,7 @@ public class GameHub : Hub
             return false;
         }
 
-        if (!_gameManager.CreateRoom(sala, Context.ConnectionId, usuario))
+        if (!_gameManager.CreateRoom(sala, Context.ConnectionId, usuario, hostSessionId))
         {
             _logger.LogWarning("CriarSala: sala {Sala} já existe", sala);
             return false;
@@ -82,6 +88,8 @@ public class GameHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, sala);
         var players = MapearJogadores(sala);
         await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
+
+        await EnviarConfiguracoesAoCaller(sala);
         _logger.LogInformation("Sala {Sala} criada por {Usuario}", sala, usuario);
         return true;
     }
@@ -285,6 +293,66 @@ public class GameHub : Hub
         await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
         _logger.LogInformation("Partida iniciada na sala {Sala} pelo jogador {ConnectionId}", sala, Context.ConnectionId);
         return true;
+    }
+
+    public async Task<GameSettings?> ConfigurarPartida(GameSettings configuracoes)
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala))
+        {
+            _logger.LogWarning("ConfigurarPartida: jogador não está em nenhuma sala");
+            return null;
+        }
+
+        var resultado = _gameManager.ConfigurarPartida(sala, Context.ConnectionId, configuracoes);
+        if (resultado is null)
+        {
+            _logger.LogWarning("ConfigurarPartida: configurações rejeitadas na sala {Sala}", sala);
+            return null;
+        }
+
+        await Clients.Group(sala).SendAsync("AtualizarConfiguracoes", resultado);
+        _logger.LogInformation("Configurações atualizadas na sala {Sala} por {ConnectionId}", sala, Context.ConnectionId);
+        return resultado;
+    }
+
+    public GameSettings ObterConfiguracoes()
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala))
+        {
+            _logger.LogWarning("ObterConfiguracoes: jogador não está em nenhuma sala");
+            return new GameSettings();
+        }
+
+        return _gameManager.ObterConfiguracoes(sala);
+    }
+
+    public CartasOpcoesDto ObterOpcoesCartas()
+    {
+        var cartas = _dataStore.GetAllCards() ?? Array.Empty<Card>();
+
+        var dificuldades = cartas
+            .Select(c => c.Difficulty)
+            .Where(d => !string.IsNullOrWhiteSpace(d))
+            .Distinct()
+            .OrderBy(d => d)
+            .ToList();
+
+        var categorias = cartas
+            .Select(c => c.Category)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+
+        return new CartasOpcoesDto(dificuldades, categorias);
+    }
+
+    private async Task EnviarConfiguracoesAoCaller(string sala)
+    {
+        await Clients.Caller.SendAsync("ReceberConfiguracoes", _gameManager.ObterConfiguracoes(sala));
+        await Clients.Caller.SendAsync("ReceberOpcoesCartas", ObterOpcoesCartas());
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)

@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import { environment } from '../../environments/environment';
 import { LobbyPlayer } from '../models/lobby-player';
+import { CardOptions } from '../models/card-options';
+import { createDefaultGameSettings, GameSettings } from '../models/game-settings';
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
@@ -24,6 +26,8 @@ export class GameService {
   readonly players = signal<LobbyPlayer[]>([]);
   readonly playerCount = computed(() => this.players().length);
   readonly meuConnectionId = signal('');
+  readonly settings = signal<GameSettings>(createDefaultGameSettings());
+  readonly cardOptions = signal<CardOptions>({ dificuldades: [], categorias: [] });
   readonly nomeFinalizado = computed(() => {
     const eu = this.players().find(p => p.connectionId === this.meuConnectionId());
     return eu ? eu.name !== eu.connectionId : false;
@@ -97,6 +101,8 @@ export class GameService {
       this.players.set([]);
       this.messages.set([]);
       this.meuConnectionId.set('');
+      this.settings.set(createDefaultGameSettings());
+      this.cardOptions.set({ dificuldades: [], categorias: [] });
       
       this.error.set('');
       this.errorTimeLeft.set(0);
@@ -154,7 +160,7 @@ export class GameService {
     return await this.hubConnection.invoke<boolean>('ForcarIniciar');
   }
 
-  async createRoom(codigoSala: string, nomeUsuario: string): Promise<void> {
+  async createRoom(codigoSala: string, nomeUsuario: string, hostSessionId = ''): Promise<void> {
     const sala = codigoSala.trim();
     const usuario = nomeUsuario.trim();
 
@@ -177,7 +183,7 @@ export class GameService {
       }
       this.meuConnectionId.set(connection.connectionId ?? '');
 
-      const resultado = await connection.invoke<boolean>('CriarSala', sala, usuario);
+      const resultado = await connection.invoke<boolean>('CriarSala', sala, usuario, hostSessionId);
       if (!resultado) {
         this.setError('Já existe uma sala com esse código. Tente novamente.');
         return;
@@ -187,6 +193,36 @@ export class GameService {
       console.error('Erro ao criar sala:', error);
       this.setError(error?.message || 'Ocorreu um erro ao criar a sala.');
     }
+  }
+
+  async configurarPartida(configuracoes: GameSettings): Promise<GameSettings | null> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) {
+      return null;
+    }
+    try {
+      const resultado = await this.hubConnection.invoke<GameSettings | null>('ConfigurarPartida', configuracoes);
+      if (resultado) {
+        this.settings.set(resultado);
+      }
+      return resultado;
+    } catch (error: any) {
+      console.error('Erro ao configurar partida:', error);
+      return null;
+    }
+  }
+
+  async obterConfiguracoes(): Promise<GameSettings | null> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) {
+      return null;
+    }
+    return await this.hubConnection.invoke<GameSettings>('ObterConfiguracoes');
+  }
+
+  async obterOpcoesCartas(): Promise<CardOptions | null> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) {
+      return null;
+    }
+    return await this.hubConnection.invoke<CardOptions>('ObterOpcoesCartas');
   }
 
   setError(msg: string): void {
@@ -263,6 +299,18 @@ export class GameService {
     this.hubConnection.on('SalaCheia', (message: string) => {
       this.isRoomFull.set(true);
       this.setError(message);
+    });
+
+    this.hubConnection.on('AtualizarConfiguracoes', (settings: GameSettings) => {
+      this.settings.set(settings);
+    });
+
+    this.hubConnection.on('ReceberConfiguracoes', (settings: GameSettings) => {
+      this.settings.set(settings);
+    });
+
+    this.hubConnection.on('ReceberOpcoesCartas', (options: CardOptions) => {
+      this.cardOptions.set(options);
     });
 
     this.hubConnection.on('FoiExpulso', async () => {

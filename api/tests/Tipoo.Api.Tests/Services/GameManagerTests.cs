@@ -1,15 +1,20 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using Taboo.Api.Services;
+using Moq;
+using Tipoo.Api.Data;
+using Tipoo.Api.Models;
+using Tipoo.Api.Services;
 
-namespace Taboo.Api.Tests.Services;
+namespace Tipoo.Api.Tests.Services;
 
 public class GameManagerTests
 {
     private readonly GameManager _sut;
+    private readonly Mock<IGameDataStore> _dataStore;
 
     public GameManagerTests()
     {
-        _sut = new GameManager(NullLogger<GameManager>.Instance);
+        _dataStore = new Mock<IGameDataStore>();
+        _sut = new GameManager(NullLogger<GameManager>.Instance, _dataStore.Object);
     }
 
     [Fact]
@@ -636,10 +641,10 @@ public class GameManagerTests
     public void RandomizarTime_RespectsTeamCapacity()
     {
         _sut.CreateRoom("ABC12", "conn1", "Player1");
-        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
         _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
-        _sut.EscolherTime("ABC12", "conn2", "Vermelho");
         _sut.AddPlayerToRoom("ABC12", "conn3", "Player3");
+        _sut.EscolherTime("ABC12", "conn1", "Vermelho");
+        _sut.EscolherTime("ABC12", "conn2", "Vermelho");
 
         var result = _sut.RandomizarTime("ABC12", "conn3");
 
@@ -719,5 +724,216 @@ public class GameManagerTests
 
         var players = _sut.GetPlayersInRoom("ABC12");
         Assert.All(players, p => Assert.NotEmpty(p.Team));
+    }
+
+    private static GameSettings CriarSettingsValidas()
+    {
+        return new GameSettings
+        {
+            RoundTimeSeconds = 60,
+            NumberOfRounds = 4,
+            SkipLimit = 3,
+            SkipCostsPoints = false,
+            TipooLeadLimit = null,
+            ExplanationTimeSeconds = 5,
+            Difficulties = new List<string> { "Fácil", "Médio", "Difícil" },
+            BuzzerSounds = new List<string> { "air-horn", "censura", "erro" },
+            RandomBuzzerSound = true,
+            PanicMode = false,
+            PointsPerCorrect = 1,
+            PointsPerError = 1,
+            PointsPerSkip = 1,
+            Categories = new List<string> { "Objeto", "Tecnologia" },
+            StartingTeam = "aleatorio",
+            TiebreakMode = "rodada-extra",
+            PauseBetweenRoundsSeconds = 5
+        };
+    }
+
+    [Fact]
+    public void ConfigurarPartida_NonHost_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.AddPlayerToRoom("ABC12", "conn2", "Player2");
+
+        var result = _sut.ConfigurarPartida("ABC12", "conn2", CriarSettingsValidas());
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_NonExistentRoom_ReturnsNull()
+    {
+        var result = _sut.ConfigurarPartida("NONEXIST", "conn1", CriarSettingsValidas());
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_OddNumberOfRounds_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        var settings = CriarSettingsValidas();
+        settings.NumberOfRounds = 5;
+
+        var result = _sut.ConfigurarPartida("ABC12", "conn1", settings);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_TipooLeadBelowMin_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        var settings = CriarSettingsValidas();
+        settings.TipooLeadLimit = 5;
+
+        var result = _sut.ConfigurarPartida("ABC12", "conn1", settings);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_EmptyDifficulties_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        var settings = CriarSettingsValidas();
+        settings.Difficulties = new List<string>();
+
+        var result = _sut.ConfigurarPartida("ABC12", "conn1", settings);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_EmptyCategories_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        var settings = CriarSettingsValidas();
+        settings.Categories = new List<string>();
+
+        var result = _sut.ConfigurarPartida("ABC12", "conn1", settings);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_EmptyBuzzerSounds_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        var settings = CriarSettingsValidas();
+        settings.BuzzerSounds = new List<string>();
+
+        var result = _sut.ConfigurarPartida("ABC12", "conn1", settings);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_InvalidStartingTeam_ReturnsNull()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        var settings = CriarSettingsValidas();
+        settings.StartingTeam = "amarelo";
+
+        var result = _sut.ConfigurarPartida("ABC12", "conn1", settings);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_Valid_UpdatesRoomSettings()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        var result = _sut.ConfigurarPartida("ABC12", "conn1", CriarSettingsValidas());
+
+        Assert.NotNull(result);
+        Assert.Equal(60, result!.RoundTimeSeconds);
+        Assert.Equal(4, result.NumberOfRounds);
+        var room = _sut.GetRoom("ABC12");
+        Assert.Equal(result, room!.Settings);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_ClampsOutOfRangeValues()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        var settings = CriarSettingsValidas();
+        settings.RoundTimeSeconds = 999;
+        settings.ExplanationTimeSeconds = 500;
+
+        var result = _sut.ConfigurarPartida("ABC12", "conn1", settings);
+
+        Assert.NotNull(result);
+        Assert.Equal(GameSettings.MaxRoundTimeSeconds, result!.RoundTimeSeconds);
+        Assert.Equal(GameSettings.MaxExplanationTimeSeconds, result.ExplanationTimeSeconds);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_Valid_SavesHostCache()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1", "host-session-1");
+
+        _sut.ConfigurarPartida("ABC12", "conn1", CriarSettingsValidas());
+
+        _dataStore.Verify(
+            d => d.SaveHostSettings("host-session-1", It.IsAny<GameSettings>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public void ConfigurarPartida_WithoutHostSession_DoesNotSaveCache()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        _sut.ConfigurarPartida("ABC12", "conn1", CriarSettingsValidas());
+
+        _dataStore.Verify(
+            d => d.SaveHostSettings(It.IsAny<string>(), It.IsAny<GameSettings>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public void CreateRoom_WithHostSessionId_AppliesCachedSettings()
+    {
+        var cached = CriarSettingsValidas();
+        cached.RoundTimeSeconds = 90;
+        _dataStore.Setup(d => d.LoadHostSettings("host-session-1")).Returns(cached);
+
+        _sut.CreateRoom("ABC12", "conn1", "Player1", "host-session-1");
+
+        var room = _sut.GetRoom("ABC12");
+        Assert.NotNull(room);
+        Assert.Equal("host-session-1", room!.HostSessionId);
+        Assert.Equal(90, room.Settings.RoundTimeSeconds);
+    }
+
+    [Fact]
+    public void CreateRoom_WithoutHostSessionId_DoesNotCallDataStore()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+
+        _dataStore.Verify(d => d.LoadHostSettings(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public void ObterConfiguracoes_ExistingRoom_ReturnsSettings()
+    {
+        _sut.CreateRoom("ABC12", "conn1", "Player1");
+        _sut.ConfigurarPartida("ABC12", "conn1", CriarSettingsValidas());
+
+        var result = _sut.ObterConfiguracoes("ABC12");
+
+        Assert.Equal(4, result.NumberOfRounds);
+    }
+
+    [Fact]
+    public void ObterConfiguracoes_NonExistentRoom_ReturnsDefaults()
+    {
+        var result = _sut.ObterConfiguracoes("NONEXIST");
+
+        Assert.NotNull(result);
+        Assert.Equal(60, result.RoundTimeSeconds);
     }
 }

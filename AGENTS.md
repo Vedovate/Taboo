@@ -1,6 +1,6 @@
 # DIRETRIZES GERAIS DE FLUXO DE TRABALHO E TESTES OBRIGATÓRIOS
 
-Você opera em um repositório que contém um backend (API C#) no diretório `Taboo.Api/` e um frontend (Angular 22 utilizing Vitest) no diretório `taboo-client/`. 
+Você opera em um repositório que contém um backend (API C#) no diretório `Tipoo.Api/` e um frontend (Angular 22 utilizing Vitest) no diretório `tipoo-client/`. 
 
 A sua regra primária de operação é: **Nenhum código pode ser commitado, finalizado ou propagado sem que a suíte de testes seja executada e aprovada.**
 
@@ -12,12 +12,12 @@ A sua regra primária de operação é: **Nenhum código pode ser commitado, fin
 ## 2. Protocolo de Execução de Testes
 Sempre que finalizar a escrita ou modificação do código, execute os testes da camada afetada antes de preparar qualquer commit.
 
-**Para o Frontend (`taboo-client/`):**
-1. Acesse o diretório: `cd taboo-client`
+**Para o Frontend (`tipoo-client/`):**
+1. Acesse o diretório: `cd tipoo-client`
 2. Execute o Vitest em modo de execução única (non-watch mode): `npm run test`
 3. Analise o output do terminal.
 
-**Para a API (`Taboo.Api/`):**
+**Para a API (`Tipoo.Api/`):**
 1. Execute da raiz do repositório: `dotnet test`
 2. Analise o output do terminal.
 
@@ -39,11 +39,11 @@ Você está **PROIBIDO** de executar `git add`, `git commit`, `git push` ou qual
 ### Backend (C# .NET 9 + SignalR)
 
 - **DI**: Sempre registre interfaces, não classes concretas. Ex.: `AddSingleton<IGameManager, GameManager>()`
-- **DTOs**: Hub methods nunca devem retornar anonymous types. Crie `PlayerDto` e similares em `Taboo.Api/DTOs/`
+- **DTOs**: Hub methods nunca devem retornar anonymous types. Crie `PlayerDto` e similares em `Tipoo.Api/DTOs/`
 - **Logging**: Injete `ILogger<T>` em todo service e hub. Em testes use `NullLogger<T>.Instance`
-- **Error Handling**: Use `IHubFilter` global (em `Taboo.Api/Filters/`) para capturar exceções não tratadas nos hubs
+- **Error Handling**: Use `IHubFilter` global (em `Tipoo.Api/Filters/`) para capturar exceções não tratadas nos hubs
 - **SQL Scripts**: Arquivos `.sql` devem ser Embedded Resource no `.csproj`, lidos via `Assembly.GetManifestResourceStream()` — nunca por caminho de arquivo
-- **Connection Strings**: O `Program.cs` deve resolver o path absoluto; a string de configuração contém só o nome do arquivo (`Data Source=TabooGame.db`)
+- **Connection Strings**: O `Program.cs` deve resolver o path absoluto; a string de configuração contém só o nome do arquivo (`Data Source=TipooGame.db`)
 
 ### Frontend (Angular 22 + Signals + Vitest)
 
@@ -54,8 +54,8 @@ Você está **PROIBIDO** de executar `git add`, `git commit`, `git push` ou qual
 - **Código morto**: Remova arquivos não utilizados (ex.: `app.html` placeholder, `app.module.ts` vazio, componentes sem rota)
 
 ## 6. Estrutura do Projeto
-- **Backend**: `Taboo.Api/` - API baseada em SignalR (pode conter rest se for explicitamente solicitado)
-- **Frontend**: `taboo-client/` - Angular 22 com Standalone Components e Signals
-- **Testes Backend**: `api/tests/Taboo.Api.Tests/` - xUnit + Moq
-- **Testes Frontend**: `taboo-client/src/**/*.spec.ts` - Vitest via Angular builder
-- **Solution**: `Taboo.sln` - Inclui projetos principal e de testes
+- **Backend**: `Tipoo.Api/` - API baseada em SignalR (pode conter rest se for explicitamente solicitado)
+- **Frontend**: `tipoo-client/` - Angular 22 com Standalone Components e Signals
+- **Testes Backend**: `api/tests/Tipoo.Api.Tests/` - xUnit + Moq
+- **Testes Frontend**: `tipoo-client/src/**/*.spec.ts` - Vitest via Angular builder
+- **Solution**: `Tipoo.sln` - Inclui projetos principal e de testes

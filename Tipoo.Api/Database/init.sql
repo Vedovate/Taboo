@@ -2,11 +2,11 @@
 CREATE TABLE IF NOT EXISTS Cards (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     MainWord TEXT NOT NULL,
-    Taboo1 TEXT NOT NULL,
-    Taboo2 TEXT NOT NULL,
-    Taboo3 TEXT NOT NULL,
-    Taboo4 TEXT NOT NULL,
-    Taboo5 TEXT NOT NULL,
+    Forbidden1 TEXT NOT NULL,
+    Forbidden2 TEXT NOT NULL,
+    Forbidden3 TEXT NOT NULL,
+    Forbidden4 TEXT NOT NULL,
+    Forbidden5 TEXT NOT NULL,
     Difficulty TEXT NOT NULL,
     Category TEXT NOT NULL
 );
@@ -20,8 +20,15 @@ CREATE TABLE IF NOT EXISTS GameHostHistory (
     FOREIGN KEY (CardId) REFERENCES Cards(Id) ON DELETE CASCADE
 );
 
+-- Criar tabela de Configurações da Partida atrelada ao Navegador do Host (Cache)
+CREATE TABLE IF NOT EXISTS GameHostSettings (
+    HostSessionId TEXT PRIMARY KEY,
+    SettingsJson TEXT NOT NULL,
+    UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Inserir as suas cartas oficiais
-INSERT OR IGNORE INTO Cards (MainWord, Taboo1, Taboo2, Taboo3, Taboo4, Taboo5, Difficulty, Category) VALUES
+INSERT OR IGNORE INTO Cards (MainWord, Forbidden1, Forbidden2, Forbidden3, Forbidden4, Forbidden5, Difficulty, Category) VALUES
 ('CLIPE', 'papel', 'escritório', 'grampo', 'metal', 'junto', 'Fácil', 'Objeto'),
 ('PASTA', 'trabalho', 'papéis', 'negócios', 'carregar', 'executivo', 'Fácil', 'Objeto'),
 ('ÂNCORA', 'navio', 'barco', 'noticiário', 'jogar', 'içar', 'Fácil', 'Objeto'),
@@ -37,6 +44,8 @@ INSERT OR IGNORE INTO Cards (MainWord, Taboo1, Taboo2, Taboo3, Taboo4, Taboo5, D
 ('CARATÊ', 'chute', 'artes marciais', 'faixa', 'mão', 'Kid', 'Fácil', 'Esporte'),
 ('CENÁRIO', 'vista', 'beleza', 'panorama', 'paisagem', 'mudança', 'Médio', 'Conceito'),
 ('VAGÃO', 'engate', 'estação', 'puxar', 'trem', 'trilho', 'Fácil', 'Veículo'),
-('CORTADOR DE GRAMA', 'jardim', 'cortar', 'aparar', 'grama/mato', 'verde', 'Fácil', 'Objeto');
+('CORTADOR DE GRAMA', 'jardim', 'cortar', 'aparar', 'grama/mato', 'verde', 'Fácil', 'Objeto'),
+('ALFABETO', 'letras', 'abc', 'escola', 'alfabetização', 'vogais', 'Difícil', 'Conceito'),
+('GASTRONOMIA', 'culinária', 'chef', 'restaurante', 'prato', 'receita', 'Difícil', 'Conceito');
 
 

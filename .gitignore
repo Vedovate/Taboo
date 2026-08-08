@@ -24,7 +24,7 @@ desktop.ini
 *.sln.docstates
 
 # ==========================================
-# 2. .NET / C# (Taboo.Api)
+# 2. .NET / C# (Tipoo.Api)
 # ==========================================
 # Pastas de compilação e artefatos
 [Bb]in/
@@ -59,7 +59,7 @@ Database/*.db
 Database/*.sqlite
 
 # ==========================================
-# 3. Node.js & Angular (taboo-client)
+# 3. Node.js & Angular (tipoo-client)
 # ==========================================
 # Dependências
 node_modules/
@@ -86,3 +86,6 @@ bazel-out/
 .env
 .env.local
 .env.*.local
+
+# 4. opencode
+.opencode/

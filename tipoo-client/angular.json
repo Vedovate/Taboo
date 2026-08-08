@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "taboo-client": {
+    "tipoo-client": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -66,10 +66,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "taboo-client:build:production"
+              "buildTarget": "tipoo-client:build:production"
             },
             "development": {
-              "buildTarget": "taboo-client:build:development"
+              "buildTarget": "tipoo-client:build:development"
             }
           },
           "defaultConfiguration": "development"

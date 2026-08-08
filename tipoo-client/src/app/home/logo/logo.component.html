@@ -1,3 +1,30 @@
-<div class="logo-placeholder" aria-label="Logo placeholder" role="img">
-  <span class="logo-text">Logo</span>
-</div>
+<svg
+  class="logo"
+  viewBox="0 0 330 110"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-label="Tipoo"
+>
+  <!-- Texto 'Tip' -->
+  <text x="0" y="85" class="logo-text">Tip</text>
+
+  <!-- Grupo do primeiro 'o': A Palavra Proibida (Veto) -->
+  <g transform="translate(170, 58)">
+    <!-- Círculo de Proibição (vazado com borda grossa) -->
+    <circle cx="0" cy="0" r="25" class="logo-ring" />
+    <!-- Risco diagonal (A Censura) -->
+    <line x1="-16" y1="-16" x2="16" y2="16" class="logo-strike" stroke-linecap="round" />
+  </g>
+
+  <!-- Grupo do segundo 'o': A Dica (Comunicação) -->
+  <g transform="translate(248, 58)">
+    <!-- Rabinho do balão de fala (encaixado perfeitamente no anel) -->
+    <path d="M 14 16 L 30 32 C 22 30 14 26 8 23 Z" class="logo-tail" />
+    <!-- Anel principal do balão -->
+    <circle cx="0" cy="0" r="25" class="logo-ring" />
+    <!-- Reticências internas (A tentativa de falar) -->
+    <circle cx="-12" cy="0" r="3.5" class="logo-dot" />
+    <circle cx="0" cy="0" r="3.5" class="logo-dot" />
+    <circle cx="12" cy="0" r="3.5" class="logo-dot" />
+  </g>
+</svg>

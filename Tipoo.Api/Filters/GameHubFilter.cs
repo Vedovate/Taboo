@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 
-namespace Taboo.Api.Filters;
+namespace Tipoo.Api.Filters;
 
 public class GameHubFilter : IHubFilter
 {
