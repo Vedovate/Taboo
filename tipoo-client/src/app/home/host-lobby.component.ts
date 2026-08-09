@@ -126,6 +126,7 @@ export class HostLobbyComponent {
         this.forcarIniciarTooltip.set(true);
         if (this.tooltipTimeout) clearTimeout(this.tooltipTimeout);
         this.tooltipTimeout = setTimeout(() => this.forcarIniciarTooltip.set(false), 2500);
+        this.router.navigate(['/jogo']);
       }
       return;
     }

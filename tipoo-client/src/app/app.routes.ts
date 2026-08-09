@@ -9,5 +9,9 @@ export const routes: Routes = [
     path: 'lobby',
     loadComponent: () => import('./home/host-lobby.component').then((c) => c.HostLobbyComponent),
   },
+  {
+    path: 'jogo',
+    loadComponent: () => import('./game/clue-giver-screen.component').then((c) => c.ClueGiverScreenComponent),
+  },
   { path: '**', redirectTo: '' },
 ];

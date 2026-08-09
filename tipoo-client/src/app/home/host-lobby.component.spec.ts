@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { signal, WritableSignal } from '@angular/core';
 import { HostLobbyComponent } from './host-lobby.component';
 import { GameService } from '../services/game.service';
 import { PlayerStorageService } from '../services/player-storage.service';
 import { CardOptions } from '../models/card-options';
 import { createDefaultGameSettings, GameSettings } from '../models/game-settings';
+import { ClueGiverScreenComponent } from '../game/clue-giver-screen.component';
 
 interface MockGameService {
   error: WritableSignal<string>;
@@ -77,7 +78,9 @@ describe('HostLobbyComponent', () => {
     await TestBed.configureTestingModule({
       imports: [HostLobbyComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([
+          { path: 'jogo', component: ClueGiverScreenComponent },
+        ]),
         { provide: GameService, useValue: mockGameService },
         { provide: PlayerStorageService, useValue: mockPlayerStorage },
       ],
@@ -534,6 +537,15 @@ describe('HostLobbyComponent', () => {
       const tooltip = fixture.nativeElement.querySelector('.start-tooltip');
       expect(tooltip).toBeTruthy();
       expect(tooltip.textContent).toContain('GAME.INICIANDO');
+    });
+
+    it('should navigate to /jogo after forcarIniciar succeeds', async () => {
+      const router = TestBed.inject(Router);
+      const readyBtn = fixture.nativeElement.querySelector('.ready-btn');
+      readyBtn.click();
+      await new Promise(resolve => setTimeout(resolve));
+      fixture.detectChanges();
+      expect(router.url).toBe('/jogo');
     });
 
     it('should call alternarPronto when non-host clicks ready button', () => {

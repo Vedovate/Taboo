@@ -1,0 +1,117 @@
+<section class="game-shell" [class.team-red]="timeJogador() === 'Vermelho'" [class.team-blue]="timeJogador() === 'Azul'">
+  <header class="topbar">
+    <div class="round-pill">
+      <span class="round-label">{{ 'GAME.ROUND' | translate }}</span>
+      <strong>{{ rodadaAtual() }} / {{ totalRodadas() }}</strong>
+    </div>
+
+    <div class="team-badge" [class.red]="timeJogador() === 'Vermelho'" [class.blue]="timeJogador() === 'Azul'">
+      <span class="dot"></span>
+      {{ nomeJogador() }}
+      <span class="team-name">{{ timeJogador() }}</span>
+    </div>
+
+    <div class="timer-wrap">
+      @if (!panicMode()) {
+        <div class="timer-ring" [style.--progress]="progresso() + '%'">
+          <svg lucideClock class="timer-icon" aria-hidden="true"></svg>
+          <strong [class.low]="tempoBaixo()">{{ tempoFormatado() }}</strong>
+        </div>
+      }
+      <div class="test-btns">
+        <button class="test-btn err" title="Teste: Errou" (click)="errou()">
+          <svg lucideX aria-hidden="true"></svg>
+        </button>
+        <button class="test-btn ok" title="Teste: Acertou" (click)="acertou()">
+          <svg lucideCheck aria-hidden="true"></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="skips-pill">
+      <span class="round-label">{{ 'GAME.PULOS' | translate }}</span>
+      <strong>{{ pulosRestantes() }} / {{ limitePulos() }}</strong>
+    </div>
+  </header>
+
+  <main class="game-grid">
+    <aside class="left-panel">
+      <section class="pontos-da-rodada" [class.team-red]="timeJogador() === 'Vermelho'" [class.team-blue]="timeJogador() === 'Azul'">
+        <span class="score-label">{{ 'GAME.PONTOS_RODADA' | translate }}</span>
+        <strong class="score-value">{{ pontosRodada() }}</strong>
+      </section>
+
+      <button class="skip-btn" [disabled]="pulosRestantes() <= 0" (click)="pulou()">
+        <svg lucideSkipForward class="skip-icon" aria-hidden="true"></svg>
+        <span>{{ 'GAME.PULOU' | translate }}</span>
+        <small>{{ pulosRestantes() }} / {{ limitePulos() }}</small>
+      </button>
+    </aside>
+
+    <div class="main-col">
+      <section class="card-zone">
+        @if (fase() === 'jogando') {
+          <article class="tipoo-card" [class.anim-card]="true" [attr.data-card]="carta().mainWord">
+            <span class="card-count">{{ cartasNaRodada() + 1 }}ª</span>
+
+            <h1 class="main-word" appFitText>{{ carta().mainWord }}</h1>
+
+            <div class="forbidden-wrap">
+              <p class="forbidden-label">{{ 'GAME.PALAVRAS_PROIBIDAS' | translate }}</p>
+              <ul class="forbidden-list">
+                @for (palavra of carta().forbidden; track $index) {
+                  <li>{{ palavra }}</li>
+                }
+              </ul>
+            </div>
+          </article>
+        } @else if (fase() === 'fimRodada') {
+          <article class="end-round-card">
+            <svg lucideTrophy class="end-icon" aria-hidden="true"></svg>
+            <h2>{{ 'GAME.FIM_RODADA' | translate }}</h2>
+            <p>{{ 'GAME.RODADA_COMPLETA' | translate }}</p>
+            <button class="btn btn-primary" (click)="proximaRodada()">
+              @if (rodadaAtual() >= totalRodadas()) {
+                {{ 'GAME.VER_RESULTADO' | translate }}
+              } @else {
+                {{ 'GAME.PROXIMA_RODADA' | translate }}
+              }
+            </button>
+          </article>
+        } @else {
+          <article class="end-round-card">
+            <svg lucideTrophy class="end-icon" aria-hidden="true"></svg>
+            <h2>{{ 'GAME.FIM_PARTIDA' | translate }}</h2>
+            <p class="result-line">
+              <span class="res red">Vermelho {{ pontosTime('Vermelho') }}</span>
+              <span>×</span>
+              <span class="res blue">{{ pontosTime('Azul') }} Azul</span>
+            </p>
+            <button class="btn btn-primary" (click)="novaPartida()">{{ 'GAME.JOGAR_NOVAMENTE' | translate }}</button>
+          </article>
+        }
+      </section>
+    </div>
+
+    <aside class="side-panel">
+      <section class="history-panel">
+        <h3>{{ 'GAME.ULTIMAS_JOGADAS' | translate }}</h3>
+        <ul class="history-list" #historyList>
+          @for (item of historico(); track $index) {
+            <li>
+              <svg lucideVolume2 class="history-icon" aria-hidden="true"></svg>
+              <span>{{ item }}</span>
+            </li>
+          } @empty {
+            <li class="history-empty">{{ 'GAME.SEM_JOGADAS' | translate }}</li>
+          }
+        </ul>
+      </section>
+
+      <button class="reset-btn" (click)="novaPartida()">
+        <svg lucideRotateCcw class="reset-icon" aria-hidden="true"></svg>
+        {{ 'GAME.RESETAR' | translate }}
+      </button>
+    </aside>
+  </main>
+</section>
