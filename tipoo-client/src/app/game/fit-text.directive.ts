@@ -8,6 +8,7 @@ export class FitTextDirective implements OnInit, OnDestroy {
   private readonly minFontSize = 16;
   private readonly maxFontSize = 500;
   private observer: ResizeObserver | null = null;
+  private mutationObserver: MutationObserver | null = null;
 
   constructor(
     private el: ElementRef<HTMLElement>,
@@ -25,12 +26,19 @@ export class FitTextDirective implements OnInit, OnDestroy {
       this.fit();
       this.observer = new ResizeObserver(() => this.fit());
       this.observer.observe(host);
+      if (host.parentElement) {
+        this.observer.observe(host.parentElement);
+      }
+      this.mutationObserver = new MutationObserver(() => this.fit());
+      this.mutationObserver.observe(host, { childList: true, characterData: true, subtree: true });
     });
   }
 
   ngOnDestroy(): void {
     this.observer?.disconnect();
     this.observer = null;
+    this.mutationObserver?.disconnect();
+    this.mutationObserver = null;
   }
 
   private fit(): void {
@@ -43,7 +51,9 @@ export class FitTextDirective implements OnInit, OnDestroy {
     const parentStyle = getComputedStyle(parent);
     const paddingX =
       parseFloat(parentStyle.paddingLeft || '0') + parseFloat(parentStyle.paddingRight || '0');
-    const parentWidth = parent.clientWidth - paddingX;
+    const rectWidth = parent.getBoundingClientRect ? parent.getBoundingClientRect().width : 0;
+    const baseWidth = rectWidth > 0 ? rectWidth : parent.clientWidth;
+    const parentWidth = baseWidth - paddingX;
     if (parentWidth <= 0) {
       return;
     }

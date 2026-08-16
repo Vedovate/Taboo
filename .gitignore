@@ -58,6 +58,9 @@ appsettings.Development.json
 Database/*.db
 Database/*.sqlite
 
+# Scripts SQL com os dados das cartas (não expor o conteúdo das cartas no git)
+Tipoo.Api/Database/*.sql
+
 # ==========================================
 # 3. Node.js & Angular (tipoo-client)
 # ==========================================
@@ -87,5 +90,8 @@ bazel-out/
 .env.local
 .env.*.local
 
-# 4. opencode
+# 4. Assistentes de IA & Regras Locais
 .opencode/
+.gemini/
+.antigravity/
+AGENTS.md
