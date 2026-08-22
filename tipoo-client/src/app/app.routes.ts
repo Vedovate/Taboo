@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { gameGuard } from './game/game.guard';
 
 export const routes: Routes = [
   {
@@ -11,6 +12,7 @@ export const routes: Routes = [
   },
   {
     path: 'jogo',
+    canActivate: [gameGuard],
     loadComponent: () => import('./game/clue-giver-screen.component').then((c) => c.ClueGiverScreenComponent),
   },
   { path: '**', redirectTo: '' },

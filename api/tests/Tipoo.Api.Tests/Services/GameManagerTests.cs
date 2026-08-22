@@ -581,7 +581,8 @@ public class GameManagerTests
 
         var result = _sut.AlternarPronto("ABC12", "conn1");
 
-        Assert.False(result);
+        Assert.False(result.IsReady);
+        Assert.False(result.TodosProntosIniciou);
     }
 
     [Fact]
@@ -592,7 +593,7 @@ public class GameManagerTests
 
         var result = _sut.AlternarPronto("ABC12", "conn1");
 
-        Assert.True(result);
+        Assert.True(result.IsReady);
         var player = _sut.GetPlayersInRoom("ABC12").First();
         Assert.True(player.IsReady);
     }
@@ -606,9 +607,26 @@ public class GameManagerTests
 
         var result = _sut.AlternarPronto("ABC12", "conn1");
 
-        Assert.False(result);
+        Assert.False(result.IsReady);
         var player = _sut.GetPlayersInRoom("ABC12").First();
         Assert.False(player.IsReady);
+    }
+
+    [Fact]
+    public void AlternarPronto_WhenAllPlayersReady_StartsMatchAutomatically()
+    {
+        _sut.CreateRoom("AUTO1", "host1", "Host");
+        _sut.AddPlayerToRoom("AUTO1", "p2", "Player2");
+        _sut.EscolherTime("AUTO1", "host1", "Vermelho");
+        _sut.EscolherTime("AUTO1", "p2", "Azul");
+
+        _sut.AlternarPronto("AUTO1", "host1");
+        var resultP2 = _sut.AlternarPronto("AUTO1", "p2");
+
+        Assert.True(resultP2.IsReady);
+        Assert.True(resultP2.TodosProntosIniciou);
+        Assert.NotNull(resultP2.Estado);
+        Assert.Equal("jogando", resultP2.Estado!.Phase);
     }
 
     [Fact]
@@ -989,5 +1007,118 @@ public class GameManagerTests
         Assert.Equal("aleatorio", result.StartingTeam);
         Assert.Equal("empatado", result.TiebreakMode);
         Assert.Equal(30, result.PauseBetweenRoundsSeconds);
+    }
+
+    [Fact]
+    public void AcertarCarta_IncrementsScoreAndRoundCards()
+    {
+        _sut.CreateRoom("GAME1", "host1", "Host");
+        _sut.AddPlayerToRoom("GAME1", "p2", "Player 2");
+        _sut.EscolherTime("GAME1", "host1", "Vermelho");
+        _sut.EscolherTime("GAME1", "p2", "Azul");
+        _sut.ForcarIniciar("GAME1", "host1");
+
+        var estadoAntes = _sut.ObterEstadoJogo("GAME1", "host1");
+        Assert.NotNull(estadoAntes);
+
+        var estadoDepois = _sut.AcertarCarta("GAME1", "host1");
+        Assert.NotNull(estadoDepois);
+        Assert.Single(estadoDepois!.RoundCards);
+        Assert.Equal("Acertou", estadoDepois.RoundCards[0].Status);
+        Assert.True(estadoDepois.RoundScore > 0);
+    }
+
+    [Fact]
+    public void PularCarta_DecrementsSkipsLeft()
+    {
+        _sut.CreateRoom("GAME2", "host1", "Host");
+        _sut.AddPlayerToRoom("GAME2", "p2", "Player 2");
+        _sut.EscolherTime("GAME2", "host1", "Vermelho");
+        _sut.EscolherTime("GAME2", "p2", "Azul");
+        _sut.ForcarIniciar("GAME2", "host1");
+
+        var estadoAntes = _sut.ObterEstadoJogo("GAME2", "host1");
+        var skipsInicial = estadoAntes!.SkipsLeft;
+
+        var estadoDepois = _sut.PularCarta("GAME2", "host1");
+        Assert.NotNull(estadoDepois);
+        Assert.Equal(skipsInicial - 1, estadoDepois!.SkipsLeft);
+        Assert.Single(estadoDepois.RoundCards);
+        Assert.Equal("Pulou", estadoDepois.RoundCards[0].Status);
+    }
+
+    [Fact]
+    public void Buzinar_CreatesBuzzerEventAndAppliesPenalty()
+    {
+        _sut.CreateRoom("GAME3", "host1", "Host");
+        _sut.AddPlayerToRoom("GAME3", "p2", "Watcher");
+        _sut.EscolherTime("GAME3", "host1", "Vermelho");
+        _sut.EscolherTime("GAME3", "p2", "Azul");
+        _sut.ForcarIniciar("GAME3", "host1");
+
+        var (estado, buzzer) = _sut.Buzinar("GAME3", "p2", "papel", "Palavra Proibida");
+
+        Assert.NotNull(buzzer);
+        Assert.Equal("papel", buzzer!.InfractionWord);
+        Assert.Equal("Watcher", buzzer.BuzzedByName);
+        Assert.NotNull(estado);
+        Assert.Single(estado!.RoundCards);
+        Assert.Equal("Errou", estado.RoundCards[0].Status);
+    }
+
+    [Fact]
+    public void EnviarPalpite_CorrectGuess_ScoresCard()
+    {
+        _sut.CreateRoom("GAME4", "host1", "ClueGiver");
+        _sut.AddPlayerToRoom("GAME4", "guesser1", "Guesser");
+        _sut.AddPlayerToRoom("GAME4", "watcher1", "Watcher");
+        _sut.EscolherTime("GAME4", "host1", "Vermelho");
+        _sut.EscolherTime("GAME4", "guesser1", "Vermelho");
+        _sut.EscolherTime("GAME4", "watcher1", "Azul");
+        
+        var room = _sut.GetRoom("GAME4");
+        room!.Settings.StartingTeam = "vermelho";
+        _sut.ForcarIniciar("GAME4", "host1");
+
+        var estado = _sut.ObterEstadoJogo("GAME4", "guesser1");
+        var word = estado!.CurrentCard!.MainWord;
+
+        var (novoEstado, msg) = _sut.EnviarPalpite("GAME4", "guesser1", word);
+
+        Assert.NotNull(msg);
+        Assert.True(msg!.IsCorrect);
+        Assert.NotNull(novoEstado);
+        Assert.Single(novoEstado!.RoundCards);
+        Assert.Equal("Acertou", novoEstado.RoundCards[0].Status);
+    }
+
+    [Fact]
+    public void VotarCarta_ReversesStatus_OnMajorityVote()
+    {
+        _sut.CreateRoom("GAME5", "host1", "Host");
+        _sut.AddPlayerToRoom("GAME5", "p2", "Watcher");
+        _sut.EscolherTime("GAME5", "host1", "Vermelho");
+        _sut.EscolherTime("GAME5", "p2", "Azul");
+        _sut.ForcarIniciar("GAME5", "host1");
+
+        _sut.Buzinar("GAME5", "p2", "papel", "Palavra Proibida");
+        _sut.FinalizarRodada("GAME5");
+
+        var estadoAposMarcar = _sut.MarcarCartaParaJulgamento("GAME5", "host1", 0, true);
+        Assert.NotNull(estadoAposMarcar);
+        Assert.Single(estadoAposMarcar!.ContestedCardIndexes!);
+
+        var estadoAposConfirmar1 = _sut.ConfirmarSelecaoReanalise("GAME5", "host1");
+        Assert.Equal("selecao_reanalise", estadoAposConfirmar1!.Phase);
+
+        var estadoAposConfirmar2 = _sut.ConfirmarSelecaoReanalise("GAME5", "p2");
+        Assert.Equal("julgamento_carta", estadoAposConfirmar2!.Phase);
+
+        var (estado, carta, empate) = _sut.VotarJulgamentoCarta("GAME5", "host1", 0, "acerto");
+        var (estadoFinal, cartaFinal, _) = _sut.VotarJulgamentoCarta("GAME5", "p2", 0, "acerto");
+
+        Assert.NotNull(cartaFinal);
+        Assert.Equal("Acertou", cartaFinal!.Status);
+        Assert.Equal("resumo_rodada", estadoFinal!.Phase);
     }
 }

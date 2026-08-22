@@ -1,117 +1,720 @@
-<section class="game-shell" [class.team-red]="timeJogador() === 'Vermelho'" [class.team-blue]="timeJogador() === 'Azul'">
+<div class="game-shell" [class.team-red]="timeJogador() === 'Vermelho'" [class.team-blue]="timeJogador() === 'Azul'">
+  <!-- TOPBAR SINCRONIZADA -->
   <header class="topbar">
-    <div class="round-pill">
-      <span class="round-label">{{ 'GAME.ROUND' | translate }}</span>
+    <div class="round-pill" title="Número da rodada atual / total">
+      <span>{{ 'GAME.ROUND' | translate }}</span>
       <strong>{{ rodadaAtual() }} / {{ totalRodadas() }}</strong>
     </div>
 
-    <div class="team-badge" [class.red]="timeJogador() === 'Vermelho'" [class.blue]="timeJogador() === 'Azul'">
+    <div class="team-badge" [class.badge-red]="timeJogador() === 'Vermelho'" [class.badge-blue]="timeJogador() === 'Azul'" title="Seu perfil de jogador e time">
       <span class="dot"></span>
-      {{ nomeJogador() }}
-      <span class="team-name">{{ timeJogador() }}</span>
+      <strong class="player-name">{{ nomeJogador() }}</strong>
+      <span class="team-name">{{ timeJogador() | uppercase }}</span>
+      <span class="role-tag" [class.role-clue]="papel() === 'explicador'" [class.role-watcher]="papel() === 'vigia'" [class.role-guesser]="papel() === 'adivinhador'">
+        @if (papel() === 'explicador') { 🎙️ Explicador }
+        @else if (papel() === 'vigia') { 🚨 Fiscal / Vigia }
+        @else if (papel() === 'adivinhador') { 💡 Adivinhador }
+        @else { ⏳ Espectador }
+      </span>
     </div>
 
     <div class="timer-wrap">
       @if (!panicMode()) {
-        <div class="timer-ring" [style.--progress]="progresso() + '%'">
-          <svg lucideClock class="timer-icon" aria-hidden="true"></svg>
-          <strong [class.low]="tempoBaixo()">{{ tempoFormatado() }}</strong>
+        <div class="timer-ring" [class.danger]="tempoBaixo()" title="Tempo restante da rodada">
+          <svg lucideClock class="icon" aria-hidden="true"></svg>
+          <strong>{{ tempoFormatado() }}</strong>
         </div>
       }
       <div class="test-btns">
-        <button class="test-btn err" title="Teste: Errou" (click)="errou()">
-          <svg lucideX aria-hidden="true"></svg>
+        <button class="icon-btn danger" (click)="errou()" title="Buzinar / Errou">
+          <svg lucideX class="icon" aria-hidden="true"></svg>
         </button>
-        <button class="test-btn ok" title="Teste: Acertou" (click)="acertou()">
-          <svg lucideCheck aria-hidden="true"></svg>
+        <button class="icon-btn success" (click)="acertou()" title="Acertou">
+          <svg lucideCheck class="icon" aria-hidden="true"></svg>
         </button>
       </div>
     </div>
 
-    <div class="skips-pill">
-      <span class="round-label">{{ 'GAME.PULOS' | translate }}</span>
-      <strong>{{ pulosRestantes() }} / {{ limitePulos() }}</strong>
+    <div class="skips-pill" title="Pulos restantes disponíveis na rodada">
+      <span>{{ 'GAME.PULOS' | translate }}</span>
+      <strong>{{ pulosRestantes() }} / {{ config().skipLimit }}</strong>
     </div>
+
+    <button class="exit-btn" (click)="voltarAoLobby()" title="Sair da partida e retornar ao lobby">
+      <svg lucideHome class="icon" aria-hidden="true"></svg>
+    </button>
   </header>
 
-  <main class="game-grid">
-    <aside class="left-panel">
-      <section class="pontos-da-rodada" [class.team-red]="timeJogador() === 'Vermelho'" [class.team-blue]="timeJogador() === 'Azul'">
-        <span class="score-label">{{ 'GAME.PONTOS_RODADA' | translate }}</span>
-        <strong class="score-value">{{ pontosRodada() }}</strong>
+  <!-- =========================================================================
+       SUB-VISÃO A: EXPLICADOR (CLUE GIVER)
+  ========================================================================== -->
+  @if (fase() === 'jogando' && papel() === 'explicador') {
+    <main class="game-grid">
+      <aside class="left-panel">
+        <div class="pontos-da-rodada" [class.rodada-red]="timeAtual() === 'Vermelho'" [class.rodada-blue]="timeAtual() === 'Azul'" title="Pontuação acumulada nesta rodada">
+          <span class="score-label">{{ 'GAME.PONTOS_RODADA' | translate }}</span>
+          <span class="score-value">{{ pontosRodada() }}</span>
+        </div>
+
+        <button class="action-btn skip-btn" (click)="pulou()" [disabled]="pulosRestantes() <= 0" title="Pular esta carta (limite configurado na sala)">
+          <svg lucideSkipForward class="icon" aria-hidden="true"></svg>
+          <span>{{ 'GAME.PULOU' | translate }}</span>
+          <small>{{ pulosRestantes() }} / {{ config().skipLimit }}</small>
+        </button>
+      </aside>
+
+      <section class="card-zone">
+        <article class="tipoo-card">
+          <header class="card-header clue-header">
+            <span class="round-indicator">{{ rodadaAtual() }}ª</span>
+            <div class="main-word" appFitText>{{ carta().mainWord }}</div>
+          </header>
+
+          <div class="forbidden-block">
+            <span class="block-title">{{ 'GAME.PALAVRAS_PROIBIDAS' | translate }}</span>
+            <ul class="forbidden-list">
+              @for (item of carta().forbidden; track $index) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          </div>
+        </article>
       </section>
 
-      <button class="skip-btn" [disabled]="pulosRestantes() <= 0" (click)="pulou()">
-        <svg lucideSkipForward class="skip-icon" aria-hidden="true"></svg>
-        <span>{{ 'GAME.PULOU' | translate }}</span>
-        <small>{{ pulosRestantes() }} / {{ limitePulos() }}</small>
-      </button>
-    </aside>
-
-    <div class="main-col">
-      <section class="card-zone">
-        @if (fase() === 'jogando') {
-          <article class="tipoo-card" [class.anim-card]="true" [attr.data-card]="carta().mainWord">
-            <span class="card-count">{{ cartasNaRodada() + 1 }}ª</span>
-
-            <h1 class="main-word" appFitText>{{ carta().mainWord }}</h1>
-
-            <div class="forbidden-wrap">
-              <p class="forbidden-label">{{ 'GAME.PALAVRAS_PROIBIDAS' | translate }}</p>
-              <ul class="forbidden-list">
-                @for (palavra of carta().forbidden; track $index) {
-                  <li>{{ palavra }}</li>
+      <aside class="side-panel">
+        <div class="chat-panel">
+          <div class="panel-header">
+            <svg lucideFlame class="icon" aria-hidden="true"></svg>
+            <h3>Palpites do Seu Time</h3>
+          </div>
+          <div class="chat-list" #chatList>
+            @if (chatMensagens().length === 0) {
+              <p class="empty-msg">Aguardando palpites do seu time...</p>
+            }
+            @for (msg of chatMensagens(); track msg.id) {
+              <div
+                class="chat-bubble"
+                [class.correct-bubble]="msg.isCorrect || msg.message.startsWith('🎯')"
+                [class.buzzer-event-bubble]="msg.message.startsWith('🚨')"
+                [class.skip-event-bubble]="msg.message.startsWith('⏭️')"
+                [class.team-red-msg]="msg.team === 'Vermelho'"
+                [class.team-blue-msg]="msg.team === 'Azul'"
+              >
+                @if (msg.message.startsWith('🚨')) {
+                  <div class="event-headline">
+                    <span class="event-badge badge-buzzer">🚨 BUZINA</span>
+                    <span class="event-author">{{ msg.authorName }}</span>
+                  </div>
+                  <span class="event-text">{{ msg.message.substring(2).trim() }}</span>
+                } @else if (msg.message.startsWith('🎯')) {
+                  <div class="event-headline">
+                    <span class="event-badge badge-correct">🎯 ACERTO!</span>
+                  </div>
+                  <span class="event-text">{{ msg.message.substring(2).trim() }}</span>
+                } @else if (msg.message.startsWith('⏭️')) {
+                  <div class="event-headline">
+                    <span class="event-badge badge-skip">⏭️ PULOU</span>
+                  </div>
+                  <span class="event-text">{{ msg.message.substring(2).trim() }}</span>
+                } @else {
+                  <strong class="author">{{ msg.authorName }}:</strong>
+                  <span class="text">{{ msg.message }}</span>
+                  @if (msg.isCorrect) {
+                    <span class="correct-badge">🎯 ACERTOU!</span>
+                  }
                 }
-              </ul>
+              </div>
+            }
+          </div>
+        </div>
+      </aside>
+    </main>
+  }
+
+  <!-- =========================================================================
+       SUB-VISÃO B: VIGIAS / FISCAIS (TIME OPONENTE)
+  ========================================================================== -->
+  @else if (fase() === 'jogando' && papel() === 'vigia') {
+    <main class="game-grid watcher-grid">
+      <aside class="left-panel">
+        <div class="pontos-da-rodada" [class.rodada-red]="timeAtual() === 'Vermelho'" [class.rodada-blue]="timeAtual() === 'Azul'" title="Pontuação acumulada nesta rodada">
+          <span class="score-label">{{ 'GAME.PONTOS_RODADA' | translate }}</span>
+          <span class="score-value">{{ pontosRodada() }}</span>
+        </div>
+
+        <button class="action-btn buzzer-main-btn" (click)="buzinarPalavra('Outros', 'Regra Geral')" title="Acionar buzina para qualquer infração geral não listada">
+          <svg lucideVolume2 class="icon" aria-hidden="true"></svg>
+          <span>BUZINA RÁPIDA</span>
+          <small>Infração Geral</small>
+        </button>
+      </aside>
+
+      <section class="card-zone">
+        <div class="watcher-banner">
+          <svg lucideAlertTriangle class="icon" aria-hidden="true"></svg>
+          <span><strong>FISCALIZANDO:</strong> Clique na palavra que o explicador falar para buzinar!</span>
+        </div>
+
+        <article class="tipoo-card watcher-card">
+          <header class="card-header watcher-header">
+            <div class="main-word-block">
+              <div class="main-word" appFitText>{{ carta().mainWord }}</div>
+              <button
+                class="buzzer-target-btn"
+                (click)="buzinarPalavra(carta().mainWord, 'Palavra Principal')"
+                title="Buzinar: O explicador falou a palavra principal / alvo!"
+              >
+                <svg lucideVolume2 class="icon" aria-hidden="true"></svg>
+                <span>{{ 'GAME.BUZINAR_ALVO' | translate }}</span>
+              </button>
             </div>
-          </article>
-        } @else if (fase() === 'fimRodada') {
-          <article class="end-round-card">
-            <svg lucideTrophy class="end-icon" aria-hidden="true"></svg>
-            <h2>{{ 'GAME.FIM_RODADA' | translate }}</h2>
-            <p>{{ 'GAME.RODADA_COMPLETA' | translate }}</p>
-            <button class="btn btn-primary" (click)="proximaRodada()">
-              @if (rodadaAtual() >= totalRodadas()) {
-                {{ 'GAME.VER_RESULTADO' | translate }}
+          </header>
+
+          <div class="forbidden-block">
+            <span class="block-title">{{ 'GAME.PALAVRAS_PROIBIDAS' | translate }}</span>
+            <ul class="forbidden-list watcher-list">
+              @for (item of carta().forbidden; track $index) {
+                <li class="forbidden-item-watcher">
+                  <span class="word-text">{{ item }}</span>
+                  <button class="buzzer-word-btn" (click)="buzinarPalavra(item, 'Palavra Proibida')" title="Buzinar: falou a palavra proibida {{ item }}">
+                    <svg lucideVolume2 class="icon" aria-hidden="true"></svg>
+                    <span>Buzinar</span>
+                  </button>
+                </li>
+              }
+            </ul>
+
+            <button class="buzzer-other-btn" (click)="buzinarPalavra('Mímica / Gesto / Rima', 'Violação de Regra')" title="Buzinar: O explicador fez mímica, gestos ou usou rimas proibidas">
+              <svg lucideVolume2 class="icon" aria-hidden="true"></svg>
+              <span>{{ 'GAME.BUZINA_OUTROS' | translate }}</span>
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <aside class="side-panel">
+        <div class="chat-panel">
+          <div class="panel-header">
+            <svg lucideFlame class="icon" aria-hidden="true"></svg>
+            <h3>Palpites ao Vivo</h3>
+          </div>
+          <div class="chat-list" #chatList>
+            @if (chatMensagens().length === 0) {
+              <p class="empty-msg">Nenhum palpite ainda...</p>
+            }
+            @for (msg of chatMensagens(); track msg.id) {
+              <div
+                class="chat-bubble"
+                [class.correct-bubble]="msg.isCorrect || msg.message.startsWith('🎯')"
+                [class.buzzer-event-bubble]="msg.message.startsWith('🚨')"
+                [class.skip-event-bubble]="msg.message.startsWith('⏭️')"
+                [class.team-red-msg]="msg.team === 'Vermelho'"
+                [class.team-blue-msg]="msg.team === 'Azul'"
+              >
+                @if (msg.message.startsWith('🚨')) {
+                  <div class="event-headline">
+                    <span class="event-badge badge-buzzer">🚨 BUZINA</span>
+                    <span class="event-author">{{ msg.authorName }}</span>
+                  </div>
+                  <span class="event-text">{{ msg.message.substring(2).trim() }}</span>
+                } @else if (msg.message.startsWith('🎯')) {
+                  <div class="event-headline">
+                    <span class="event-badge badge-correct">🎯 ACERTO!</span>
+                  </div>
+                  <span class="event-text">{{ msg.message.substring(2).trim() }}</span>
+                } @else if (msg.message.startsWith('⏭️')) {
+                  <div class="event-headline">
+                    <span class="event-badge badge-skip">⏭️ PULOU</span>
+                  </div>
+                  <span class="event-text">{{ msg.message.substring(2).trim() }}</span>
+                } @else {
+                  <strong class="author">{{ msg.authorName }}:</strong>
+                  <span class="text">{{ msg.message }}</span>
+                  @if (msg.isCorrect) {
+                    <span class="correct-badge">🎯 ACERTOU!</span>
+                  }
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </aside>
+    </main>
+  }
+
+  <!-- =========================================================================
+       SUB-VISÃO C: ADIVINHADORES (GUESSERS DO TIME DA VEZ)
+  ========================================================================== -->
+  @else if (fase() === 'jogando' && papel() === 'adivinhador') {
+    <main class="game-grid guesser-grid">
+      <aside class="left-panel">
+        <div class="pontos-da-rodada" [class.rodada-red]="timeAtual() === 'Vermelho'" [class.rodada-blue]="timeAtual() === 'Azul'" title="Pontuação acumulada nesta rodada">
+          <span class="score-label">{{ 'GAME.PONTOS_RODADA' | translate }}</span>
+          <span class="score-value">{{ pontosRodada() }}</span>
+        </div>
+      </aside>
+
+      <section class="card-zone guesser-card-zone">
+        <div class="guesser-arena-card">
+          <div class="speaker-info">
+            <svg lucideFlame class="icon pulse-icon" aria-hidden="true"></svg>
+            <h2>{{ explicadorNome() }} está dando as dicas!</h2>
+            <p>Ouça as pistas e digite suas respostas abaixo no chat!</p>
+          </div>
+
+          <div class="chat-stream" #chatList>
+            @if (chatMensagens().length === 0) {
+              <div class="empty-chat-state">
+                <span>Nenhum palpite enviado ainda. Seja o primeiro a arriscar!</span>
+              </div>
+            }
+            @for (msg of chatMensagens(); track msg.id) {
+              <div
+                class="chat-bubble"
+                [class.correct-bubble]="msg.isCorrect || msg.message.startsWith('🎯')"
+                [class.buzzer-event-bubble]="msg.message.startsWith('🚨')"
+                [class.skip-event-bubble]="msg.message.startsWith('⏭️')"
+                [class.my-bubble]="msg.connectionId === gameService.meuConnectionId()"
+              >
+                @if (msg.message.startsWith('🚨')) {
+                  <div class="event-headline">
+                    <span class="event-badge badge-buzzer">🚨 BUZINA</span>
+                    <span class="event-author">{{ msg.authorName }}</span>
+                  </div>
+                  <span class="event-text">{{ msg.message.substring(2).trim() }}</span>
+                } @else if (msg.message.startsWith('🎯')) {
+                  <div class="event-headline">
+                    <span class="event-badge badge-correct">🎯 ACERTO!</span>
+                  </div>
+                  <span class="event-text">{{ msg.message.substring(2).trim() }}</span>
+                } @else if (msg.message.startsWith('⏭️')) {
+                  <div class="event-headline">
+                    <span class="event-badge badge-skip">⏭️ PULOU</span>
+                  </div>
+                  <span class="event-text">{{ msg.message.substring(2).trim() }}</span>
+                } @else {
+                  <strong class="author">{{ msg.authorName }}:</strong>
+                  <span class="text">{{ msg.message }}</span>
+                  @if (msg.isCorrect) {
+                    <span class="correct-badge">🎯 ACERTOU!</span>
+                  }
+                }
+              </div>
+            }
+          </div>
+
+          <form class="guess-input-box" (submit)="enviarPalpite(); $event.preventDefault()">
+            <input
+              type="text"
+              class="guess-field"
+              placeholder="Digite seu palpite e aperte Enter..."
+              [value]="palpiteInput()"
+              (input)="palpiteInput.set($any($event.target).value)"
+              autocomplete="off"
+            />
+            <button type="submit" class="send-btn" [disabled]="!palpiteInput().trim()" title="Enviar palpite ao vivo">
+              <svg lucideSend class="icon" aria-hidden="true"></svg>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <div class="history-panel">
+          <div class="panel-header">
+            <svg lucideHourglass class="icon" aria-hidden="true"></svg>
+            <h3>Cartas da Rodada</h3>
+          </div>
+          <div class="history-list" #historyList>
+            @if (cartasRodada().length === 0) {
+              <p class="empty-msg">{{ 'GAME.SEM_JOGADAS' | translate }}</p>
+            }
+            @for (item of cartasRodada(); track item.cardIndex) {
+              <div class="history-item" [class.history-correct]="item.status === 'Acertou'" [class.history-error]="item.status === 'Errou'" [class.history-skip]="item.status === 'Pulou'">
+                <span class="item-status">{{ item.status | uppercase }}</span>
+                <span class="item-word">{{ item.mainWord }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </aside>
+    </main>
+  }
+
+  <!-- =========================================================================
+       SUB-VISÃO D: ESPERANDO PRÓXIMA RODADA
+  ========================================================================== -->
+  @else if (fase() === 'jogando' && papel() === 'espera') {
+    <main class="waiting-screen">
+      <div class="waiting-card">
+        <svg lucideHourglass class="icon spin-icon" aria-hidden="true"></svg>
+        <h2>Você está conectado!</h2>
+        <p>A rodada atual está em andamento. Você entrará no jogo assim que a próxima rodada começar!</p>
+        <div class="score-preview">
+          <span>Placar: Vermelho {{ pontosVermelho() }} × {{ pontosAzul() }} Azul</span>
+        </div>
+      </div>
+    </main>
+  }
+
+  <!-- =========================================================================
+       MODAL / BANNER DE EXPLICAÇÃO PÓS-BUZINA
+  ========================================================================== -->
+  @if (fase() === 'explicacao_buzina') {
+    <div class="modal-overlay">
+      <div class="modal-card buzzer-alert-modal">
+        <div class="modal-header-danger">
+          <svg lucideAlertTriangle class="icon" aria-hidden="true"></svg>
+          <h2>{{ 'GAME.BUZINA_TITULO' | translate }}</h2>
+        </div>
+        <div class="modal-body">
+          <p class="buzzed-by">Acionado por: <strong>{{ buzinaAtiva()?.buzzedByName }}</strong> ({{ buzinaAtiva()?.buzzerTeam }})</p>
+          <div class="infraction-highlight">
+            <span>Motivo apontado:</span>
+            <strong>{{ buzinaAtiva()?.infractionWord }}</strong>
+          </div>
+          <div class="explanation-countdown">
+            <span>Tempo de Explicação:</span>
+            <strong class="count">{{ localExplanationTimer() }}s</strong>
+          </div>
+        </div>
+        <button class="primary-modal-btn" (click)="fecharModalExplicacao()" title="Retomar a partida imediatamente">Continuar Partida</button>
+      </div>
+    </div>
+  }
+
+  <!-- =========================================================================
+       SUB-VISÃO E1: REANÁLISE E SELEÇÃO DE CARTAS PARA JULGAMENTO (STOPOTS ETAPA 1)
+  ========================================================================== -->
+  @else if (fase() === 'selecao_reanalise') {
+    <section class="reanalysis-screen">
+      <header class="reanalysis-header">
+        <div class="title-group">
+          <svg lucideVote class="icon" aria-hidden="true"></svg>
+          <div>
+            <h2>{{ 'GAME.REANALISE_TITULO' | translate }} - Rodada {{ rodadaAtual() }}</h2>
+            <p>{{ 'GAME.REANALISE_SUBTITULO' | translate }}</p>
+          </div>
+        </div>
+        <div class="scores-bar">
+          <span class="score-tag red">Vermelho: {{ pontosVermelho() }} pts</span>
+          <span class="score-tag blue">Azul: {{ pontosAzul() }} pts</span>
+        </div>
+      </header>
+
+      <div class="reanalysis-carousel">
+        @if (cartasRodada().length === 0) {
+          <div class="empty-cards">Nenhuma carta jogada nesta rodada.</div>
+        }
+        @for (carta of cartasRodada(); track carta.cardIndex) {
+          <article class="carousel-card" [class.is-contested]="isCardContested(carta.cardIndex)">
+            <div class="card-status-pill" [class.status-correct]="carta.status === 'Acertou'" [class.status-error]="carta.status === 'Errou'" [class.status-skip]="carta.status === 'Pulou'">
+              {{ carta.status | uppercase }}
+            </div>
+
+            <h3 class="card-word">{{ carta.mainWord }}</h3>
+
+            @if (carta.buzzedByName) {
+              <div class="buzzer-badge">
+                <span>🚨 Buzinado por <strong>{{ carta.buzzedByName }}</strong></span>
+                <small>"{{ carta.infractionWord }}"</small>
+              </div>
+            }
+
+            <div class="forbidden-chips">
+              @for (f of carta.forbidden; track $index) {
+                <span class="chip">{{ f }}</span>
+              }
+            </div>
+
+            <button
+              class="contest-toggle-btn"
+              [class.active]="isCardContested(carta.cardIndex)"
+              (click)="alternarContestacao(carta.cardIndex, !isCardContested(carta.cardIndex))"
+              title="Marcar esta carta para passar pelo tribunal de votação de todos os jogadores"
+            >
+              @if (isCardContested(carta.cardIndex)) {
+                <span>{{ 'GAME.REANALISE_CONTESTADO' | translate }}</span>
               } @else {
-                {{ 'GAME.PROXIMA_RODADA' | translate }}
+                <span>{{ 'GAME.REANALISE_CONTESTAR' | translate }}</span>
               }
             </button>
           </article>
-        } @else {
-          <article class="end-round-card">
-            <svg lucideTrophy class="end-icon" aria-hidden="true"></svg>
-            <h2>{{ 'GAME.FIM_PARTIDA' | translate }}</h2>
-            <p class="result-line">
-              <span class="res red">Vermelho {{ pontosTime('Vermelho') }}</span>
-              <span>×</span>
-              <span class="res blue">{{ pontosTime('Azul') }} Azul</span>
-            </p>
-            <button class="btn btn-primary" (click)="novaPartida()">{{ 'GAME.JOGAR_NOVAMENTE' | translate }}</button>
-          </article>
         }
-      </section>
-    </div>
+      </div>
 
-    <aside class="side-panel">
-      <section class="history-panel">
-        <h3>{{ 'GAME.ULTIMAS_JOGADAS' | translate }}</h3>
-        <ul class="history-list" #historyList>
-          @for (item of historico(); track $index) {
-            <li>
-              <svg lucideVolume2 class="history-icon" aria-hidden="true"></svg>
-              <span>{{ item }}</span>
-            </li>
-          } @empty {
-            <li class="history-empty">{{ 'GAME.SEM_JOGADAS' | translate }}</li>
+      <footer class="reanalysis-footer">
+        <div class="ready-status-info">
+          <span>Prontos: <strong>{{ readyToAdvancePlayerIds().length }} / {{ jogadores().length }}</strong> jogadores</span>
+        </div>
+
+        <div class="footer-actions">
+          <button
+            class="ready-advance-btn"
+            [class.is-ready]="estouProntoTransicao()"
+            (click)="confirmarSelecaoReanalise()"
+            title="Confirmar suas seleções de cartas e aguardar os outros jogadores"
+          >
+            @if (estouProntoTransicao()) {
+              <svg lucideCheck class="icon" aria-hidden="true"></svg>
+              <span>Aguardando Outros...</span>
+            } @else {
+              <span>{{ 'GAME.REANALISE_CONFIRMAR' | translate }}</span>
+            }
+          </button>
+
+          @if (souHost()) {
+            <button class="host-force-btn" (click)="forcarAvancarRodada()" title="Host: Forçar avanço imediato para o julgamento ou próxima rodada">
+              <span>Forçar Avançar ⚡</span>
+            </button>
           }
-        </ul>
-      </section>
+        </div>
+      </footer>
+    </section>
+  }
 
-      <button class="reset-btn" (click)="novaPartida()">
-        <svg lucideRotateCcw class="reset-icon" aria-hidden="true"></svg>
-        {{ 'GAME.RESETAR' | translate }}
-      </button>
-    </aside>
-  </main>
-</section>
+  <!-- =========================================================================
+       SUB-VISÃO E2: JULGAMENTO CARTA A CARTA (STOPOTS ETAPA 2)
+  ========================================================================== -->
+  @else if (fase() === 'julgamento_carta' && cartaEmJulgamento()) {
+    <section class="judging-screen">
+      <header class="judging-header">
+        <div class="title-group">
+          <svg lucideSparkles class="icon" aria-hidden="true"></svg>
+          <div>
+            <h2>{{ 'GAME.JULGAMENTO_TITULO' | translate }}</h2>
+            <p>Carta <strong>#{{ currentJudgingIndex() + 1 }}</strong> de <strong>{{ contestedCardIndexes().length }}</strong> contestadas</p>
+          </div>
+        </div>
+      </header>
+
+      @if (alertaEmpate()) {
+        <div class="tiebreak-alert-banner">
+          <svg lucideSparkles class="icon" aria-hidden="true"></svg>
+          <div>
+            <strong>⚖️ VOTAÇÃO EMPATADA POR TIME!</strong>
+            <p>Os times votaram em bloco partidário 😉 — A decisão foi resolvida na moeda!</p>
+          </div>
+        </div>
+      }
+
+      <main class="judging-main-card">
+        <div class="card-trial-box">
+          <div class="trial-meta">
+            <span class="initial-status" [class.status-correct]="cartaEmJulgamento()?.status === 'Acertou'" [class.status-error]="cartaEmJulgamento()?.status === 'Errou'">
+              Status Original: {{ cartaEmJulgamento()?.status | uppercase }}
+            </span>
+            @if (cartaEmJulgamento()?.buzzedByName) {
+              <span class="buzzer-tag">
+                Buzinado por {{ cartaEmJulgamento()?.buzzedByName }}: "{{ cartaEmJulgamento()?.infractionWord }}"
+              </span>
+            }
+          </div>
+
+          <h1 class="trial-word">{{ cartaEmJulgamento()?.mainWord }}</h1>
+
+          <div class="trial-forbidden">
+            <span class="f-label">{{ 'GAME.PALAVRAS_PROIBIDAS' | translate }}:</span>
+            <div class="chips">
+              @for (f of cartaEmJulgamento()?.forbidden; track $index) {
+                <span class="forbidden-chip">{{ f }}</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="judging-actions-block">
+          <h3>{{ 'GAME.JULGAMENTO_SUBTITULO' | translate }}</h3>
+
+          <div class="vote-buttons-row">
+            <!-- BOTÃO VERDE (ACERTO) -->
+            <button
+              class="strong-vote-btn vote-green"
+              [class.selected]="meuVotoNaCarta(cartaEmJulgamento()) === 'acerto'"
+              (click)="votarJulgamento(cartaEmJulgamento()!.cardIndex, 'acerto')"
+              [title]="'GAME.JULGAMENTO_ACERTO_TOOLTIP' | translate"
+            >
+              <div class="btn-top">
+                <svg lucideCheck class="icon" aria-hidden="true"></svg>
+                <strong>{{ 'GAME.JULGAMENTO_ACERTO' | translate }}</strong>
+              </div>
+              <span class="vote-count">{{ cartaEmJulgamento()?.votesKeep ?? 0 }} votos</span>
+            </button>
+
+            <!-- BOTÃO VERMELHO (ERRO / INFRAÇÃO) -->
+            <button
+              class="strong-vote-btn vote-red"
+              [class.selected]="meuVotoNaCarta(cartaEmJulgamento()) === 'erro'"
+              (click)="votarJulgamento(cartaEmJulgamento()!.cardIndex, 'erro')"
+              [title]="'GAME.JULGAMENTO_ERRO_TOOLTIP' | translate"
+            >
+              <div class="btn-top">
+                <svg lucideX class="icon" aria-hidden="true"></svg>
+                <strong>{{ 'GAME.JULGAMENTO_ERRO' | translate }}</strong>
+              </div>
+              <span class="vote-count">{{ cartaEmJulgamento()?.votesReverse ?? 0 }} votos</span>
+            </button>
+
+            <!-- BOTÃO AMARELO (ANULAR) -->
+            <button
+              class="strong-vote-btn vote-yellow"
+              [class.selected]="meuVotoNaCarta(cartaEmJulgamento()) === 'anular'"
+              (click)="votarJulgamento(cartaEmJulgamento()!.cardIndex, 'anular')"
+              [title]="'GAME.JULGAMENTO_ANULAR_TOOLTIP' | translate"
+            >
+              <div class="btn-top">
+                <svg lucideRotateCcw class="icon" aria-hidden="true"></svg>
+                <strong>{{ 'GAME.JULGAMENTO_ANULAR' | translate }}</strong>
+              </div>
+              <span class="vote-count">{{ cartaEmJulgamento()?.votesCancel ?? 0 }} votos</span>
+            </button>
+          </div>
+        </div>
+      </main>
+    </section>
+  }
+
+  <!-- =========================================================================
+       SUB-VISÃO E3: RESUMO DA RODADA APÓS JULGAMENTOS
+  ========================================================================== -->
+  @else if (fase() === 'resumo_rodada' || fase() === 'revisao') {
+    <section class="round-summary-screen">
+      <header class="summary-header">
+        <svg lucideSparkles class="icon" aria-hidden="true"></svg>
+        <div>
+          <h2>{{ 'GAME.RESUMO_RODADA_TITULO' | translate }} - Rodada {{ rodadaAtual() }}</h2>
+          <p>{{ 'GAME.RESUMO_RODADA_SUBTITULO' | translate }}</p>
+        </div>
+      </header>
+
+      <div class="scoreboard-summary">
+        <div class="team-score-card red-score">
+          <span class="team-name">TIME VERMELHO</span>
+          <strong class="score">{{ pontosVermelho() }}</strong>
+          <span class="pts-label">pontos</span>
+        </div>
+        <div class="vs-divider">VS</div>
+        <div class="team-score-card blue-score">
+          <span class="team-name">TIME AZUL</span>
+          <strong class="score">{{ pontosAzul() }}</strong>
+          <span class="pts-label">pontos</span>
+        </div>
+      </div>
+
+      <footer class="summary-footer">
+        <button
+          class="ready-advance-btn"
+          [class.is-ready]="estouProntoTransicao()"
+          (click)="confirmarProntoTransicao()"
+          title="Marcar pronto para iniciar a próxima rodada"
+        >
+          @if (estouProntoTransicao()) {
+            <svg lucideCheck class="icon" aria-hidden="true"></svg>
+            <span>Aguardando Jogadores ({{ readyToAdvancePlayerIds().length }}/{{ jogadores().length }})...</span>
+          } @else {
+            <span>{{ 'GAME.PRONTO_PROXIMA_RODADA' | translate }}</span>
+          }
+        </button>
+
+        @if (souHost()) {
+          <button class="host-force-btn" (click)="forcarAvancarRodada()" title="Host: Forçar início da próxima rodada imediatamente">
+            <span>Forçar Próxima Rodada ⚡</span>
+          </button>
+        }
+      </footer>
+    </section>
+  }
+
+  <!-- =========================================================================
+       SUB-VISÃO F: FIM DE PARTIDA & PÓDIO DE ESTATÍSTICAS
+  ========================================================================== -->
+  @else if (fase() === 'fim_partida') {
+    <section class="gameover-screen">
+      <div class="winner-celebration">
+        <svg lucideTrophy class="icon trophy-icon" aria-hidden="true"></svg>
+        @if (estatisticasFinais()?.winnerTeam === 'Empate') {
+          <h1 class="winner-title">PARTIDA EMPATADA! 🤝</h1>
+        } @else {
+          <h1 class="winner-title" [class.text-red]="estatisticasFinais()?.winnerTeam === 'Vermelho'" [class.text-blue]="estatisticasFinais()?.winnerTeam === 'Azul'">
+            VITÓRIA DO TIME {{ estatisticasFinais()?.winnerTeam | uppercase }}! 🎉
+          </h1>
+        }
+        <div class="final-score">
+          <span class="team-score red">Vermelho: {{ estatisticasFinais()?.scoreRed ?? pontosVermelho() }} pts</span>
+          <span class="vs-badge">×</span>
+          <span class="team-score blue">Azul: {{ estatisticasFinais()?.scoreBlue ?? pontosAzul() }} pts</span>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card mvp-card" title="Jogador com maior número de cartas adivinhadas na partida">
+          <div class="stat-icon">👑</div>
+          <div class="stat-info">
+            <span class="stat-label">MVP / Maior Pontuador</span>
+            <strong class="stat-value">{{ estatisticasFinais()?.mvpName || 'Nenhum' }}</strong>
+            <small>{{ estatisticasFinais()?.mvpPoints || 0 }} acertos</small>
+          </div>
+        </div>
+
+        <div class="stat-card" title="Fiscal que mais acionou a buzina com sucesso">
+          <div class="stat-icon">🚨</div>
+          <div class="stat-info">
+            <span class="stat-label">Fiscal de Ouro (Buzinador)</span>
+            <strong class="stat-value">{{ estatisticasFinais()?.topBuzzerName || 'Nenhum' }}</strong>
+            <small>{{ estatisticasFinais()?.topBuzzerCount || 0 }} infrações pegas</small>
+          </div>
+        </div>
+
+        <div class="stat-card" title="Jogador que mais sofreu buzinadas por falar palavras proibidas">
+          <div class="stat-icon">🤐</div>
+          <div class="stat-info">
+            <span class="stat-label">Mais Buzinado</span>
+            <strong class="stat-value">{{ estatisticasFinais()?.mostBuzzedName || 'Nenhum' }}</strong>
+            <small>{{ estatisticasFinais()?.mostBuzzedCount || 0 }} deslizes</small>
+          </div>
+        </div>
+
+        <div class="stat-card" title="Palavra adivinhada no menor tempo em segundos">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-info">
+            <span class="stat-label">Carta Mais Rápida</span>
+            <strong class="stat-value">{{ estatisticasFinais()?.fastestCardWord || 'Nenhuma' }}</strong>
+            <small>{{ estatisticasFinais()?.fastestCardSeconds || 0 }}s</small>
+          </div>
+        </div>
+
+        <div class="stat-card full-span-stat">
+          <div class="summary-totals">
+            <div class="total-item">
+              <span class="lbl">Total Acertos</span>
+              <strong class="val success">{{ estatisticasFinais()?.totalCorrect || 0 }}</strong>
+            </div>
+            <div class="total-item">
+              <span class="lbl">Total Erros</span>
+              <strong class="val danger">{{ estatisticasFinais()?.totalErrors || 0 }}</strong>
+            </div>
+            <div class="total-item">
+              <span class="lbl">Total Pulos</span>
+              <strong class="val neutral">{{ estatisticasFinais()?.totalSkips || 0 }}</strong>
+            </div>
+            <div class="total-item">
+              <span class="lbl">Reversões no Julgamento</span>
+              <strong class="val purple">{{ estatisticasFinais()?.totalContestedReversed || 0 }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="gameover-actions">
+        <button class="primary-btn" (click)="novaPartida()" title="Reiniciar baralho e jogar uma nova partida com os mesmos jogadores">
+          <svg lucideRotateCcw class="icon" aria-hidden="true"></svg>
+          <span>{{ 'GAME.JOGAR_NOVAMENTE' | translate }}</span>
+        </button>
+        <button class="secondary-btn" (click)="voltarAoLobby()" title="Retornar à sala do Lobby">
+          <svg lucideHome class="icon" aria-hidden="true"></svg>
+          <span>Voltar ao Lobby</span>
+        </button>
+      </footer>
+    </section>
+  }
+</div>

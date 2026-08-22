@@ -5,10 +5,19 @@ import { environment } from '../../environments/environment';
 import { LobbyPlayer } from '../models/lobby-player';
 import { CardOptions } from '../models/card-options';
 import { createDefaultGameSettings, GameSettings } from '../models/game-settings';
+import { GameState } from '../models/game-state';
+import { BuzzerEvent } from '../models/buzzer-event';
+import { ChatMessage } from '../models/chat-message';
+import { PlayedCard } from '../models/played-card';
+
+import { SoundService } from './sound.service';
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private soundService: SoundService,
+  ) {}
   private readonly hubUrl = environment.signalR.hubUrl;
   private hubConnection?: HubConnection;
   private currentRoomCode = '';
@@ -28,6 +37,40 @@ export class GameService {
   readonly meuConnectionId = signal('');
   readonly settings = signal<GameSettings>(createDefaultGameSettings());
   readonly cardOptions = signal<CardOptions>({ dificuldades: [], categorias: [] });
+
+  // Estado do Jogo em tempo real
+  readonly gameState = signal<GameState | null>(null);
+  readonly activeBuzzer = computed<BuzzerEvent | null>(() => this.gameState()?.activeBuzzer ?? null);
+  readonly roundCards = computed<PlayedCard[]>(() => this.gameState()?.roundCards ?? []);
+  readonly chatMessages = computed<ChatMessage[]>(() => this.gameState()?.chatMessages ?? []);
+  readonly endStats = computed(() => this.gameState()?.endStats ?? null);
+  readonly currentCard = computed(() => this.gameState()?.currentCard ?? null);
+  readonly fase = computed(() => this.gameState()?.phase ?? 'jogando');
+  readonly empateSorteadoAlerta = signal(false);
+  private empateTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  readonly meuJogador = computed(() =>
+    this.players().find(p => p.connectionId === this.meuConnectionId())
+  );
+
+  readonly meuPapel = computed<'explicador' | 'vigia' | 'adivinhador' | 'espera'>(() => {
+    const st = this.gameState();
+    const me = this.meuJogador();
+    if (!st || !me || !me.team) {
+      return 'espera';
+    }
+
+    if (me.connectionId === st.spokespersonId) {
+      return 'explicador';
+    }
+
+    if (me.team !== st.activeTeam) {
+      return 'vigia';
+    }
+
+    return 'adivinhador';
+  });
+
   readonly nomeFinalizado = computed(() => {
     const eu = this.players().find(p => p.connectionId === this.meuConnectionId());
     return eu ? eu.name !== eu.connectionId : false;
@@ -66,6 +109,8 @@ export class GameService {
         return;
       }
       this.connected.set(true);
+      sessionStorage.setItem('tipoo_room', sala);
+      sessionStorage.setItem('tipoo_user', usuario);
     } catch (error: any) {
       console.error('Erro ao conectar:', error);
       const errorMsg = error?.message || 'Ocorreu um erro desconhecido.';
@@ -103,7 +148,9 @@ export class GameService {
       this.meuConnectionId.set('');
       this.settings.set(createDefaultGameSettings());
       this.cardOptions.set({ dificuldades: [], categorias: [] });
-      
+      this.gameState.set(null);
+      sessionStorage.removeItem('tipoo_room');
+
       this.error.set('');
       this.errorTimeLeft.set(0);
     } catch (error: any) {
@@ -189,6 +236,8 @@ export class GameService {
         return;
       }
       this.connected.set(true);
+      sessionStorage.setItem('tipoo_room', sala);
+      sessionStorage.setItem('tipoo_user', usuario);
     } catch (error: any) {
       console.error('Erro ao criar sala:', error);
       this.setError(error?.message || 'Ocorreu um erro ao criar a sala.');
@@ -223,6 +272,140 @@ export class GameService {
       return null;
     }
     return await this.hubConnection.invoke<CardOptions>('ObterOpcoesCartas');
+  }
+
+  // =========================================================================
+  // MÉTODOS DE JOGO EM TEMPO REAL
+  // =========================================================================
+
+  async obterEstadoJogo(): Promise<GameState | null> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) {
+      return null;
+    }
+    try {
+      const st = await this.hubConnection.invoke<GameState | null>('ObterEstadoJogo');
+      if (st) {
+        this.gameState.set(st);
+      }
+      return st;
+    } catch {
+      return null;
+    }
+  }
+
+  async acertarCarta(): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      this.soundService.tocarAcerto();
+      await this.hubConnection.invoke('AcertarCarta');
+    } catch (error) {
+      console.error('Erro ao acertar carta:', error);
+    }
+  }
+
+  async pularCarta(): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      await this.hubConnection.invoke('PularCarta');
+    } catch (error) {
+      console.error('Erro ao pular carta:', error);
+    }
+  }
+
+  async buzinar(palavraInfracao: string, tipoInfracao: string): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      const soundType = this.settings()?.buzzerSounds?.[0] || 'erro';
+      this.soundService.tocarBuzina(soundType);
+      await this.hubConnection.invoke('Buzinar', palavraInfracao, tipoInfracao);
+    } catch (error) {
+      console.error('Erro ao buzinar:', error);
+    }
+  }
+
+  async enviarPalpite(palpite: string): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      await this.hubConnection.invoke('EnviarPalpite', palpite);
+    } catch (error) {
+      console.error('Erro ao enviar palpite:', error);
+    }
+  }
+
+  async finalizarTempoExplicacao(): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      await this.hubConnection.invoke('FinalizarTempoExplicacao');
+    } catch (error) {
+      console.error('Erro ao finalizar tempo de explicação:', error);
+    }
+  }
+
+  async finalizarRodada(): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      await this.hubConnection.invoke('FinalizarRodada');
+    } catch (error) {
+      console.error('Erro ao finalizar rodada:', error);
+    }
+  }
+
+  async marcarCartaParaJulgamento(cardIndex: number, contestar: boolean): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      await this.hubConnection.invoke('MarcarCartaParaJulgamento', cardIndex, contestar);
+    } catch (error) {
+      console.error('Erro ao marcar carta para julgamento:', error);
+    }
+  }
+
+  async confirmarSelecaoReanalise(): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      await this.hubConnection.invoke('ConfirmarSelecaoReanalise');
+    } catch (error) {
+      console.error('Erro ao confirmar seleção de reanálise:', error);
+    }
+  }
+
+  async votarJulgamentoCarta(cardIndex: number, opcaoVoto: string): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      await this.hubConnection.invoke('VotarJulgamentoCarta', cardIndex, opcaoVoto);
+    } catch (error) {
+      console.error('Erro ao votar no julgamento da carta:', error);
+    }
+  }
+
+  async votarCarta(cardIndex: number, opcaoVoto: string): Promise<void> {
+    await this.votarJulgamentoCarta(cardIndex, opcaoVoto);
+  }
+
+  async confirmarProntoTransicao(): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      await this.hubConnection.invoke('ConfirmarProntoTransicao');
+    } catch (error) {
+      console.error('Erro ao confirmar pronto de transição:', error);
+    }
+  }
+
+  async avancarRodada(): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      await this.hubConnection.invoke('AvancarRodada');
+    } catch (error) {
+      console.error('Erro ao avançar rodada:', error);
+    }
+  }
+
+  async reiniciarPartida(): Promise<void> {
+    if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) return;
+    try {
+      await this.hubConnection.invoke('ReiniciarPartida');
+    } catch (error) {
+      console.error('Erro ao reiniciar partida:', error);
+    }
   }
 
   setError(msg: string): void {
@@ -311,6 +494,48 @@ export class GameService {
 
     this.hubConnection.on('ReceberOpcoesCartas', (options: CardOptions) => {
       this.cardOptions.set(options);
+    });
+
+    this.hubConnection.on('PartidaIniciada', (estado: GameState) => {
+      this.gameState.set(estado);
+      this.router.navigate(['/jogo']);
+    });
+
+    this.hubConnection.on('AtualizarEstadoJogo', (estado: GameState) => {
+      this.gameState.set(estado);
+    });
+
+    this.hubConnection.on('ReceberBuzina', (buzzer: BuzzerEvent) => {
+      this.gameState.update(st => st ? { ...st, activeBuzzer: buzzer, phase: 'explicacao_buzina' } : null);
+      const soundType = this.settings()?.buzzerSounds?.[0] || 'erro';
+      this.soundService.tocarBuzina(soundType);
+    });
+
+    this.hubConnection.on('ReceberPalpite', (msg: ChatMessage) => {
+      if (msg.isCorrect) {
+        this.soundService.tocarAcerto();
+      }
+      this.gameState.update(st => {
+        if (!st) return null;
+        const msgs = [...st.chatMessages, msg];
+        if (msgs.length > 100) msgs.shift();
+        return { ...st, chatMessages: msgs };
+      });
+    });
+
+    this.hubConnection.on('AtualizarVotacaoCarta', (carta: PlayedCard, empateSorteado: boolean) => {
+      this.gameState.update(st => {
+        if (!st) return null;
+        const cards = [...st.roundCards];
+        cards[carta.cardIndex] = carta;
+        return { ...st, roundCards: cards };
+      });
+
+      if (empateSorteado) {
+        this.empateSorteadoAlerta.set(true);
+        if (this.empateTimeout) clearTimeout(this.empateTimeout);
+        this.empateTimeout = setTimeout(() => this.empateSorteadoAlerta.set(false), 4500);
+      }
     });
 
     this.hubConnection.on('FoiExpulso', async () => {

@@ -120,17 +120,18 @@ export class HostLobbyComponent {
   }
 
   async togglePronto(): Promise<void> {
-    if (this.souHost()) {
-      const ok = await this.gameService.forcarIniciar();
-      if (ok) {
-        this.forcarIniciarTooltip.set(true);
-        if (this.tooltipTimeout) clearTimeout(this.tooltipTimeout);
-        this.tooltipTimeout = setTimeout(() => this.forcarIniciarTooltip.set(false), 2500);
-        this.router.navigate(['/jogo']);
-      }
-      return;
-    }
     const novoEstado = await this.gameService.alternarPronto();
     this.pronto.set(novoEstado);
+  }
+
+  async forcarIniciar(): Promise<void> {
+    if (!this.souHost()) return;
+    const ok = await this.gameService.forcarIniciar();
+    if (ok) {
+      this.forcarIniciarTooltip.set(true);
+      if (this.tooltipTimeout) clearTimeout(this.tooltipTimeout);
+      this.tooltipTimeout = setTimeout(() => this.forcarIniciarTooltip.set(false), 2500);
+      this.router.navigate(['/jogo']);
+    }
   }
 }

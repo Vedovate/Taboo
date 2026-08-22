@@ -64,6 +64,16 @@ public class GameHub : Hub
         await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
 
         await EnviarConfiguracoesAoCaller(sala);
+
+        if (gameRoom is not null && gameRoom.IsActive)
+        {
+            var estado = _gameManager.ObterEstadoJogo(sala, Context.ConnectionId);
+            if (estado is not null)
+            {
+                await Clients.Caller.SendAsync("AtualizarEstadoJogo", estado);
+            }
+        }
+
         _logger.LogInformation("Jogador {ConnectionId} entrou na sala {Sala}", Context.ConnectionId, sala);
         return true;
     }
@@ -239,16 +249,23 @@ public class GameHub : Hub
             return false;
         }
 
-        var resultado = _gameManager.AlternarPronto(sala, Context.ConnectionId);
-        if (!resultado && !_gameManager.IsPlayerInRoom(sala, Context.ConnectionId))
+        var (isReady, todosProntosIniciou, estadoJogo) = _gameManager.AlternarPronto(sala, Context.ConnectionId);
+        if (!isReady && !_gameManager.IsPlayerInRoom(sala, Context.ConnectionId))
         {
             return false;
         }
 
         var players = MapearJogadores(sala);
         await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
-        _logger.LogInformation("Jogador {ConnectionId} alternou pronto na sala {Sala}", Context.ConnectionId, sala);
-        return resultado;
+        _logger.LogInformation("Jogador {ConnectionId} alternou pronto para {Pronto} na sala {Sala}", Context.ConnectionId, isReady, sala);
+
+        if (todosProntosIniciou && estadoJogo is not null)
+        {
+            await Clients.Group(sala).SendAsync("PartidaIniciada", estadoJogo);
+            _logger.LogInformation("Partida iniciada automaticamente por prontos na sala {Sala}", sala);
+        }
+
+        return isReady;
     }
 
     public async Task<string?> RandomizarTime()
@@ -291,6 +308,13 @@ public class GameHub : Hub
 
         var players = MapearJogadores(sala);
         await Clients.Group(sala).SendAsync("AtualizarJogadores", players);
+
+        var estado = _gameManager.ObterEstadoJogo(sala, Context.ConnectionId);
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("PartidaIniciada", estado);
+        }
+
         _logger.LogInformation("Partida iniciada na sala {Sala} pelo jogador {ConnectionId}", sala, Context.ConnectionId);
         return true;
     }
@@ -347,6 +371,185 @@ public class GameHub : Hub
             .ToList();
 
         return new CartasOpcoesDto(dificuldades, categorias);
+    }
+
+    // =========================================================================
+    // ENDPOINTS DE JOGO EM TEMPO REAL
+    // =========================================================================
+
+    public GameStateDto? ObterEstadoJogo()
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala))
+        {
+            return null;
+        }
+        return _gameManager.ObterEstadoJogo(sala, Context.ConnectionId);
+    }
+
+    public async Task<GameStateDto?> AcertarCarta()
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return null;
+
+        var estado = _gameManager.AcertarCarta(sala, Context.ConnectionId);
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+        return estado;
+    }
+
+    public async Task<GameStateDto?> PularCarta()
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return null;
+
+        var estado = _gameManager.PularCarta(sala, Context.ConnectionId);
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+        return estado;
+    }
+
+    public async Task Buzinar(string palavraInfracao, string tipoInfracao)
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return;
+
+        var (estado, buzzer) = _gameManager.Buzinar(sala, Context.ConnectionId, palavraInfracao, tipoInfracao);
+        if (buzzer is not null)
+        {
+            await Clients.Group(sala).SendAsync("ReceberBuzina", buzzer);
+        }
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+    }
+
+    public async Task EnviarPalpite(string palpite)
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return;
+
+        var (estado, msg) = _gameManager.EnviarPalpite(sala, Context.ConnectionId, palpite);
+        if (msg is not null)
+        {
+            await Clients.Group(sala).SendAsync("ReceberPalpite", msg);
+        }
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+    }
+
+    public async Task FinalizarTempoExplicacao()
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return;
+
+        var estado = _gameManager.FinalizarTempoExplicacao(sala);
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+    }
+
+    public async Task FinalizarRodada()
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return;
+
+        var estado = _gameManager.FinalizarRodada(sala);
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+    }
+
+    public async Task MarcarCartaParaJulgamento(int cardIndex, bool contestar)
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return;
+
+        var estado = _gameManager.MarcarCartaParaJulgamento(sala, Context.ConnectionId, cardIndex, contestar);
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+    }
+
+    public async Task ConfirmarSelecaoReanalise()
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return;
+
+        var estado = _gameManager.ConfirmarSelecaoReanalise(sala, Context.ConnectionId);
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+    }
+
+    public async Task VotarJulgamentoCarta(int cardIndex, string opcaoVoto)
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return;
+
+        var (estado, carta, empateSorteado) = _gameManager.VotarJulgamentoCarta(sala, Context.ConnectionId, cardIndex, opcaoVoto);
+        if (carta is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarVotacaoCarta", carta, empateSorteado);
+        }
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+    }
+
+    public async Task VotarCarta(int cardIndex, string opcaoVoto)
+    {
+        await VotarJulgamentoCarta(cardIndex, opcaoVoto);
+    }
+
+    public async Task ConfirmarProntoTransicao()
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return;
+
+        var estado = _gameManager.ConfirmarProntoTransicao(sala, Context.ConnectionId);
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+    }
+
+    public async Task<GameStateDto?> AvancarRodada()
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return null;
+
+        var estado = _gameManager.AvancarRodada(sala, Context.ConnectionId);
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+        return estado;
+    }
+
+    public async Task<GameStateDto?> ReiniciarPartida()
+    {
+        var sala = _gameManager.GetRoomCodeByConnectionId(Context.ConnectionId);
+        if (string.IsNullOrWhiteSpace(sala)) return null;
+
+        var estado = _gameManager.ReiniciarPartida(sala, Context.ConnectionId);
+        if (estado is not null)
+        {
+            await Clients.Group(sala).SendAsync("AtualizarEstadoJogo", estado);
+        }
+        return estado;
     }
 
     private async Task EnviarConfiguracoesAoCaller(string sala)

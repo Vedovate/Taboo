@@ -488,9 +488,11 @@ describe('HostLobbyComponent', () => {
   });
 
   describe('pronto / forcar iniciar', () => {
-    it('should show FORCAR_INICIAR when player is host', () => {
+    it('should show PRONTO and FORCAR_INICIAR when player is host', () => {
       const readyBtn = fixture.nativeElement.querySelector('.ready-btn');
-      expect(readyBtn.textContent).toContain('GAME.FORCAR_INICIAR');
+      expect(readyBtn.textContent).toContain('GAME.PRONTO');
+      const forceBtn = fixture.nativeElement.querySelector('.force-start-btn');
+      expect(forceBtn.textContent).toContain('GAME.FORCAR_INICIAR');
     });
 
     it('should show PRONTO when player is not host', () => {
@@ -499,6 +501,8 @@ describe('HostLobbyComponent', () => {
 
       const readyBtn = fixture.nativeElement.querySelector('.ready-btn');
       expect(readyBtn.textContent).toContain('GAME.PRONTO');
+      const forceBtn = fixture.nativeElement.querySelector('.force-start-btn');
+      expect(forceBtn).toBeNull();
     });
 
     it('should disable pronto button when not host and not in a team', () => {
@@ -521,16 +525,16 @@ describe('HostLobbyComponent', () => {
       expect(readyBtn.disabled).toBe(false);
     });
 
-    it('should call forcarIniciar when host clicks ready button', () => {
-      const readyBtn = fixture.nativeElement.querySelector('.ready-btn');
-      readyBtn.click();
+    it('should call forcarIniciar when host clicks force start button', () => {
+      const forceBtn = fixture.nativeElement.querySelector('.force-start-btn');
+      forceBtn.click();
 
       expect(mockGameService.forcarIniciar).toHaveBeenCalled();
     });
 
     it('should show tooltip after forcarIniciar succeeds', async () => {
-      const readyBtn = fixture.nativeElement.querySelector('.ready-btn');
-      readyBtn.click();
+      const forceBtn = fixture.nativeElement.querySelector('.force-start-btn');
+      forceBtn.click();
       await new Promise(resolve => setTimeout(resolve));
       fixture.detectChanges();
 
@@ -541,8 +545,8 @@ describe('HostLobbyComponent', () => {
 
     it('should navigate to /jogo after forcarIniciar succeeds', async () => {
       const router = TestBed.inject(Router);
-      const readyBtn = fixture.nativeElement.querySelector('.ready-btn');
-      readyBtn.click();
+      const forceBtn = fixture.nativeElement.querySelector('.force-start-btn');
+      forceBtn.click();
       await new Promise(resolve => setTimeout(resolve));
       fixture.detectChanges();
       expect(router.url).toBe('/jogo');

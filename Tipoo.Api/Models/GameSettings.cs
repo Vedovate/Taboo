@@ -29,6 +29,8 @@ public class GameSettings
     public string StartingTeam { get; set; } = "aleatorio";
     public string TiebreakMode { get; set; } = "empatado";
     public int PauseBetweenRoundsSeconds { get; set; } = 30;
+    public int ReanalysisSelectionTimeSeconds { get; set; } = 20;
+    public int CardJudgingTimeSeconds { get; set; } = 10;
 
     public GameSettings Clone()
     {
@@ -49,7 +51,9 @@ public class GameSettings
             PointsPerSkip = PointsPerSkip,
             StartingTeam = StartingTeam,
             TiebreakMode = TiebreakMode,
-            PauseBetweenRoundsSeconds = PauseBetweenRoundsSeconds
+            PauseBetweenRoundsSeconds = PauseBetweenRoundsSeconds,
+            ReanalysisSelectionTimeSeconds = ReanalysisSelectionTimeSeconds,
+            CardJudgingTimeSeconds = CardJudgingTimeSeconds
         };
     }
 }

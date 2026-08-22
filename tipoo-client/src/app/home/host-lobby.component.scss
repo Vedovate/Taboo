@@ -363,6 +363,34 @@
   position: relative;
 }
 
+.ready-area.dual-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.force-start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 1rem 1.25rem;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: 1px solid #ff4500;
+  background: linear-gradient(135deg, #ff4500, #ff6b3d);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(255, 69, 0, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.force-start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 69, 0, 0.6);
+}
+
 .ready-btn {
   display: inline-flex;
   align-items: center;

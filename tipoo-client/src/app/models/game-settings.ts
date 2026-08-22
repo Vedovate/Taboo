@@ -15,6 +15,8 @@ export interface GameSettings {
   startingTeam: 'azul' | 'vermelho' | 'aleatorio';
   tiebreakMode: 'empatado' | 'rodada-extra';
   pauseBetweenRoundsSeconds: number;
+  reanalysisSelectionTimeSeconds: number;
+  cardJudgingTimeSeconds: number;
 }
 
 export const DEFAULT_DIFFICULTIES = ['Fácil', 'Médio', 'Difícil'];
@@ -41,5 +43,7 @@ export function createDefaultGameSettings(): GameSettings {
     startingTeam: 'aleatorio',
     tiebreakMode: 'empatado',
     pauseBetweenRoundsSeconds: 30,
+    reanalysisSelectionTimeSeconds: 20,
+    cardJudgingTimeSeconds: 10,
   };
 }

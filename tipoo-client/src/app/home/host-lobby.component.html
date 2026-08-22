@@ -107,22 +107,30 @@
           }
         </div>
 
-      <div class="ready-area">
+      <div class="ready-area" [class.dual-buttons]="souHost()">
         <button
-          class="ready-btn full-width"
-          [class.is-ready]="pronto() && !souHost()"
-          [disabled]="!souHost() && prontoDesabilitado"
+          class="ready-btn"
+          [class.full-width]="!souHost()"
+          [class.is-ready]="pronto()"
+          [disabled]="prontoDesabilitado"
           (click)="togglePronto()"
+          title="Marcar/desmarcar pronto para iniciar a partida"
         >
-          @if (souHost()) {
-            <span>{{ 'GAME.FORCAR_INICIAR' | translate }}</span>
-          } @else {
-            @if (pronto()) {
-              <svg lucideCheck class="icon" aria-hidden="true"></svg>
-            }
-            <span>{{ 'GAME.PRONTO' | translate }}</span>
+          @if (pronto()) {
+            <svg lucideCheck class="icon" aria-hidden="true"></svg>
           }
+          <span>{{ 'GAME.PRONTO' | translate }}</span>
         </button>
+
+        @if (souHost()) {
+          <button
+            class="force-start-btn"
+            (click)="forcarIniciar()"
+            title="Forçar o início imediato da partida com os jogadores presentes"
+          >
+            <span>{{ 'GAME.FORCAR_INICIAR' | translate }}</span>
+          </button>
+        }
 
         @if (forcarIniciarTooltip()) {
           <span class="start-tooltip">{{ 'GAME.INICIANDO' | translate }}</span>

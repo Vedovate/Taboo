@@ -34,6 +34,34 @@ public class GameDataStore : IGameDataStore
         }
     }
 
+    public IReadOnlyList<Card> GetCardsForGame(List<string> difficulties, int count)
+    {
+        try
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var diffs = (difficulties != null && difficulties.Count > 0)
+                ? difficulties
+                : new List<string> { "Fácil", "Médio", "Difícil" };
+
+            var cards = connection.Query<Card>(
+                @"SELECT Id, MainWord, Forbidden1, Forbidden2, Forbidden3, Forbidden4, Forbidden5, Difficulty, Category 
+                  FROM Cards 
+                  WHERE Difficulty IN @Diffs 
+                  ORDER BY RANDOM() 
+                  LIMIT @Count",
+                new { Diffs = diffs, Count = Math.Max(count, 30) });
+
+            return cards.AsList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Falha ao carregar cartas para a partida");
+            return GetAllCards();
+        }
+    }
+
     public GameSettings? LoadHostSettings(string hostSessionId)
     {
         try
@@ -101,6 +129,37 @@ public class GameDataStore : IGameDataStore
         catch (Exception ex)
         {
             _logger.LogError(ex, "Falha ao registrar início da partida {MatchKey}", match.MatchKey);
+        }
+    }
+
+    public void UpdateMatchFinished(string matchKey, int scoreRed, int scoreBlue, string winnerTeam, int finishedPlayers)
+    {
+        try
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            connection.Execute(
+                @"UPDATE Matches 
+                  SET Completed = 1,
+                      EndedAt = @EndedAt,
+                      FinishedPlayers = @FinishedPlayers,
+                      FinalScoreRed = @ScoreRed,
+                      FinalScoreBlue = @ScoreBlue,
+                      WinnerTeam = @WinnerTeam
+                  WHERE MatchKey = @MatchKey",
+                new
+                {
+                    MatchKey = matchKey,
+                    EndedAt = DateTime.UtcNow,
+                    FinishedPlayers = finishedPlayers,
+                    ScoreRed = scoreRed,
+                    ScoreBlue = scoreBlue,
+                    WinnerTeam = winnerTeam
+                });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Falha ao atualizar encerramento da partida {MatchKey}", matchKey);
         }
     }
 

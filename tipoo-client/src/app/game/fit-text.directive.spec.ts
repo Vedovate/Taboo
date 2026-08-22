@@ -18,6 +18,17 @@ class MockResizeObserver {
 function mockLayout(element: HTMLElement, width: number): void {
   Object.defineProperty(element, 'clientWidth', { configurable: true, value: width });
   Object.defineProperty(element, 'scrollWidth', { configurable: true, value: width });
+  element.getBoundingClientRect = () => ({
+    width,
+    height: 30,
+    top: 0,
+    bottom: 30,
+    left: 0,
+    right: width,
+    x: 0,
+    y: 0,
+    toJSON: () => {},
+  });
 }
 
 describe('FitTextDirective', () => {
@@ -42,30 +53,29 @@ describe('FitTextDirective', () => {
     fixture.detectChanges();
   }
 
-  it('should create with nowrap style applied', () => {
+  it('should create with display block and clip style applied', () => {
     createFixture(200, 120);
     expect(span).toBeTruthy();
-    expect(span.style.whiteSpace).toBe('nowrap');
-    expect(span.style.overflow).toBe('hidden');
+    expect(span.style.textOverflow).toBe('clip');
   });
 
   it('should keep the full font size when the text fits the container', () => {
     createFixture(200, 100);
-    expect(parseInt(span.style.fontSize, 10)).toBe(500);
+    expect(parseInt(span.style.fontSize, 10)).toBe(40);
   });
 
   it('should shrink the font when the text is wider than the container', () => {
     createFixture(200, 400);
     const fontSize = parseInt(span.style.fontSize, 10);
     expect(fontSize).toBeGreaterThanOrEqual(16);
-    expect(fontSize).toBeLessThan(500);
+    expect(fontSize).toBeLessThanOrEqual(40);
   });
 
   it('should fit any long text within the container width', () => {
     createFixture(200, 900);
     const fontSize = parseInt(span.style.fontSize, 10);
     expect(fontSize).toBeGreaterThanOrEqual(16);
-    expect(fontSize).toBeLessThan(500);
+    expect(fontSize).toBeLessThanOrEqual(40);
   });
 
   it('should account for the parent padding when fitting the text', () => {
@@ -79,7 +89,7 @@ describe('FitTextDirective', () => {
     fixture.detectChanges();
     const fontSize = parseInt(span.style.fontSize, 10);
     expect(fontSize).toBeGreaterThanOrEqual(16);
-    expect(fontSize).toBeLessThan(500);
+    expect(fontSize).toBeLessThanOrEqual(40);
   });
 
   it('should keep the full font size when the text fits the content width (ignoring padding)', () => {
@@ -91,6 +101,6 @@ describe('FitTextDirective', () => {
     mockLayout(wrapper, 200);
     mockLayout(span, 100);
     fixture.detectChanges();
-    expect(parseInt(span.style.fontSize, 10)).toBe(500);
+    expect(parseInt(span.style.fontSize, 10)).toBe(40);
   });
 });

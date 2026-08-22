@@ -444,4 +444,77 @@ describe('GameService', () => {
       expect(service.cardOptions()).toEqual({ dificuldades: [], categorias: [] });
     });
   });
+
+  describe('game actions', () => {
+    beforeEach(async () => {
+      signalrMock.mockConnection.invoke.mockResolvedValue(true);
+      await service.createRoom('ABC12', 'Player1');
+      signalrMock.mockConnection.invoke.mockClear();
+    });
+
+    it('should invoke AcertarCarta', async () => {
+      await service.acertarCarta();
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('AcertarCarta');
+    });
+
+    it('should invoke PularCarta', async () => {
+      await service.pularCarta();
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('PularCarta');
+    });
+
+    it('should invoke Buzinar with word and type', async () => {
+      await service.buzinar('papel', 'Palavra Proibida');
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('Buzinar', 'papel', 'Palavra Proibida');
+    });
+
+    it('should invoke EnviarPalpite with text', async () => {
+      await service.enviarPalpite('grampo');
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('EnviarPalpite', 'grampo');
+    });
+
+    it('should invoke MarcarCartaParaJulgamento with index and bool', async () => {
+      await service.marcarCartaParaJulgamento(0, true);
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('MarcarCartaParaJulgamento', 0, true);
+    });
+
+    it('should invoke ConfirmarSelecaoReanalise', async () => {
+      await service.confirmarSelecaoReanalise();
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('ConfirmarSelecaoReanalise');
+    });
+
+    it('should invoke VotarJulgamentoCarta with index and option', async () => {
+      await service.votarJulgamentoCarta(0, 'acerto');
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('VotarJulgamentoCarta', 0, 'acerto');
+    });
+
+    it('should invoke ConfirmarProntoTransicao', async () => {
+      await service.confirmarProntoTransicao();
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('ConfirmarProntoTransicao');
+    });
+
+    it('should invoke AvancarRodada', async () => {
+      await service.avancarRodada();
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('AvancarRodada');
+    });
+
+    it('should invoke ReiniciarPartida', async () => {
+      await service.reiniciarPartida();
+      expect(signalrMock.mockConnection.invoke).toHaveBeenCalledWith('ReiniciarPartida');
+    });
+
+    it('should update gameState on AtualizarEstadoJogo', () => {
+      const mockState: any = {
+        roomCode: 'ABC12',
+        roundNumber: 2,
+        phase: 'jogando',
+        activeTeam: 'Azul',
+        roundCards: [],
+        chatMessages: [],
+      };
+      signalrMock.triggerEvent('AtualizarEstadoJogo', mockState);
+
+      expect(service.gameState()).toEqual(mockState);
+      expect(service.fase()).toBe('jogando');
+    });
+  });
 });
